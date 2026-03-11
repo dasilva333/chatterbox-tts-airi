@@ -1,7 +1,7 @@
 {
     "catgirl": {
         "hmph": "hahmf",
-        "tilde": ["[nyan]", "[meow]", "[mew]"],
+        "tilde": ["nyan", "meow", "mew", "[meow]"],
         "emoticons": [
             { "pattern": "\\b0_0\\b", "replacement": " [meow] " },
             { "pattern": "\\b[oO]_[oO]\\b", "replacement": " [mew]? " }
@@ -10,7 +10,7 @@
     },
     "bunnygirl": {
         "hmph": "humff",
-        "tilde": ["[pyon]", "[boing]", "[desu]"],
+        "tilde": ["pyon", "boing", "desu", "[gasp]"],
         "emoticons": [
             { "pattern": "\\b0_0\\b", "replacement": " [gasp] twitch twitch " },
             { "pattern": "\\b[oO]_[oO]\\b", "replacement": " [gasp] twitch twitch " }
@@ -19,7 +19,7 @@
     },
     "demon_imp": {
         "hmph": "heumf",
-        "tilde": ["[hek]", "[laughter] cackle", "[fufufu]"],
+        "tilde": ["hek", "fufufu", "[laughter]"],
         "emoticons": [
             { "pattern": "\\b0_0\\b", "replacement": " [hiss] " },
             { "pattern": "\\b[oO]_[oO]\\b", "replacement": " [growl] " }

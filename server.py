@@ -80,9 +80,9 @@ def preprocess_text(text: str, profile_name: str) -> str:
             filler = random.choice(tilde_fillers)
             text = text.replace("~", f" {filler} ", 1)
 
-    # 5. Narrative (*text*) and Mutters ((text)) -> [whisper] for Chatterbox
-    text = re.sub(r"\*([^*]+)\*", r" [whisper] \1 [whisper] ", text)
-    text = re.sub(r"(\([^)]+\)|\[[^\]]+\])", r" [whisper] \1 [whisper] ", text)
+    # 5. Narrative (*text*) and Mutters ((text)) -> [whisper] (prefix only)
+    text = re.sub(r"\*([^*]+)\*", r" [whisper] \1 ", text)
+    text = re.sub(r"(\([^)]+\)|\[[^\]]+\])", r" [whisper] \1 ", text)
 
     # 6. Dramatic Ellipsis -> [sigh]
     text = text.replace("...", " [sigh] ")
