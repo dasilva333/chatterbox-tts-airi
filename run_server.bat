@@ -15,7 +15,8 @@ if not exist "venv\Scripts\python.exe" (
 )
 
 :: Run the server using the venv python directly
-.\venv\Scripts\python.exe server.py
+:: Pass all arguments (like --profile) through to server.py
+.\venv\Scripts\python.exe server.py %*
 
 if %ERRORLEVEL% neq 0 (
     echo [Error] Server stopped unexpectedly with exit code %ERRORLEVEL%.
