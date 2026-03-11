@@ -1,0 +1,10 @@
+venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+*.ogg
+*.mp3
+*.wav
+!voices/ivy.mp3
+benchmark_report.txt
+supported_tags.md
