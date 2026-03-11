@@ -80,13 +80,12 @@ def preprocess_text(text: str, profile_name: str) -> str:
             filler = random.choice(tilde_fillers)
             text = text.replace("~", f" {filler} ", 1)
 
-    # 5. Narrative (*text*) -> [whisper] for Chatterbox? 
-    # Or just keep as is. Chatterbox doesn't have a direct 'narrative' rate tag yet.
-    # But we can wrap it in [whisper] if it exists.
-    # text = re.sub(r"\*([^*]+)\*", r" [whisper] \1 [whisper] ", text)
+    # 5. Narrative (*text*) and Mutters ((text)) -> [whisper] for Chatterbox
+    text = re.sub(r"\*([^*]+)\*", r" [whisper] \1 [whisper] ", text)
+    text = re.sub(r"(\([^)]+\)|\[[^\]]+\])", r" [whisper] \1 [whisper] ", text)
 
-    # 6. Dramatic Ellipsis -> [sigh] or just leave for natural pause
-    # text = text.replace("...", " [sigh] ")
+    # 6. Dramatic Ellipsis -> [sigh]
+    text = text.replace("...", " [sigh] ")
 
     # 7. Strip Emojis (similar to aws-polly)
     text = EMOJI_REGEX.sub(" ", text)
