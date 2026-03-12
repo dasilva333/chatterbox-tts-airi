@@ -19,11 +19,20 @@
     },
     "demon_imp": {
         "hmph": "heumf",
-        "tilde": ["hek", "fufufu", "[laughter]"],
+        "tilde": ["[hek]", "[laughter] cackle", "[fufufu]"],
         "emoticons": [
             { "pattern": "\\b0_0\\b", "replacement": " [hiss] " },
             { "pattern": "\\b[oO]_[oO]\\b", "replacement": " [growl] " }
         ],
         "narrative": { "rate": "slow", "volume": "medium" }
+    },
+    "kappybara": {
+        "hmph": "mmnnf",
+        "tilde": ["chill", "bro", "relaxed", "[sigh]", "[exhale]"],
+        "emoticons": [
+            { "pattern": "\\b0_0\\b", "replacement": " [sigh] ... " },
+            { "pattern": "\\b[oO]_[oO]\\b", "replacement": " [sigh] ... " }
+        ],
+        "narrative": { "rate": "x-slow", "volume": "soft" }
     }
 }

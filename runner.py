@@ -10,7 +10,7 @@ def main():
     parser.add_argument("voice", help="Voice name (link to voices/<name>.mp3 or .wav)")
     parser.add_argument("text", help="Text to speak")
     parser.add_argument("--turbo", action="store_true", help="Use the Turbo model")
-    parser.add_argument("--exaggeration", type=float, default=0.5, help="Emotion exaggeration (0.0 to 1.0+)")
+    parser.add_argument("--exaggeration", type=float, default=0.0, help="Emotion exaggeration (0.0 to 1.0+)")
     
     args = parser.parse_args()
 
