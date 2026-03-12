@@ -7,4 +7,3 @@ __pycache__/
 *.wav
 !voices/ivy.mp3
 benchmark_report.txt
-supported_tags.md
