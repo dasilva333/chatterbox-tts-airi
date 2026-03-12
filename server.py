@@ -31,6 +31,7 @@ app.add_middleware(
 # Parse command line arguments
 parser = argparse.ArgumentParser(description="Chatterbox TTS Server")
 parser.add_argument("--mannerisms", default="catgirl", help="Starting mannerisms from profiles.json (default: catgirl)")
+parser.add_argument("--turbo", action="store_true", help="Use the high-speed Turbo model")
 parser.add_argument("--port", type=int, default=8090, help="Port to run the server on")
 args, unknown = parser.parse_known_args()
 
@@ -96,8 +97,14 @@ def preprocess_text(text: str, profile_name: str) -> str:
 
 # Initialize the model
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-print(f"Loading Chatterbox model on {DEVICE}...")
-model = ChatterboxTTS.from_pretrained(DEVICE)
+if args.turbo:
+    from chatterbox.tts_turbo import ChatterboxTurboTTS
+    print(f"Loading Chatterbox Turbo model on {DEVICE}...")
+    model = ChatterboxTurboTTS.from_pretrained(DEVICE)
+else:
+    from chatterbox import ChatterboxTTS
+    print(f"Loading Chatterbox model on {DEVICE}...")
+    model = ChatterboxTTS.from_pretrained(DEVICE)
 print("Model loaded successfully.")
 
 # Global lock for sequential processing
@@ -160,11 +167,18 @@ async def speech(request: SpeechRequest):
                 PRIMED_VOICES[voice_name] = voice_path
 
             # Generate audio
-            wav_tensor = model.generate(
-                processed_input, 
-                audio_prompt_path=voice_path, 
-                exaggeration=request.exaggeration
-            )
+            if args.turbo:
+                # Turbo model generate doesn't take exaggeration
+                wav_tensor = model.generate(
+                    processed_input, 
+                    audio_prompt_path=voice_path
+                )
+            else:
+                wav_tensor = model.generate(
+                    processed_input, 
+                    audio_prompt_path=voice_path, 
+                    exaggeration=request.exaggeration
+                )
             
             # Convert to numpy
             wav_data = wav_tensor.squeeze(0).cpu().numpy()

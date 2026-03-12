@@ -8,12 +8,12 @@ Chatterbox is a high-performance, OpenAI-compatible Text-to-Speech (TTS) server 
 - **Mannerisms**: Customize character-specific mannerisms, fillers (e.g., `~` mappings), and text replacements via `profiles.json`.
 - **Emotion Tags**: Trigger specific sounds like `[laughter]`, `[sigh]`, or `[whisper]` using square bracket tags.
 - **Performance Optimized**: Features asynchronous request queuing and model priming for near-instant synthesis.
+- **Turbo Mode**: Supports the high-speed `ChatterboxTurboTTS` for near-real-time synthesis.
 - **OGG Opus Support**: Natively streams high-quality, low-bandwidth OGG Opus audio.
 
 ---
 
 ## Installation & Setup
-
 1. **Clone the Repository**:
    ```bash
    git clone https://github.com/dasilva333/chatterbox-tts-airi.git
@@ -41,15 +41,16 @@ Chatterbox is a high-performance, OpenAI-compatible Text-to-Speech (TTS) server 
 ### Starting the Server
 Run the provided batch file to start the FastAPI server:
 ```bash
-run_server.bat --mannerisms=kappybara
+run_server.bat --mannerisms=kappybara --turbo
 ```
-- `--mannerisms`: Choose a character mannerism from `profiles.json` (e.g., `catgirl`, `bunnygirl`, `kappybara`).
+- `--mannerisms`: Choose a character mannerism from `profiles.json`.
+- `--turbo`: Use the high-speed Turbo model (requires higher VRAM).
 - `--port`: Default is `8090`.
 
 ### CLI Runner
 For quick one-off generation:
 ```bash
-python runner.py zenbara "Hello Phil... [sigh] ~ how are you? ~"
+python runner.py zenbara "Hello Phil... [sigh] ~ how are you? ~" --turbo
 ```
 
 ---
@@ -58,9 +59,10 @@ python runner.py zenbara "Hello Phil... [sigh] ~ how are you? ~"
 
 ### Mannerisms (`profiles.json`)
 Manage character-specific logic:
-- **`tilde`**: Mappings for the `~` character (e.g., `nyan`, `bro`).
-- **`hmph`**: Custom pronunciations for "hmph" variants.
+- **`tilde`**: Mappings for the `~` character (e.g., `nyan` for catgirl, `bro` for kappybara).
+- **`hmph`**: Custom pronunciations for "hmph" variants (e.g., `hahmf`).
 - **`emoticons`**: Regex-based replacements for patterns like `0_0`.
+- **`narrative`**: Character-specific speech settings for `*text*` (rate, volume).
 
 ### Emotion & Expressiveness Tips
 - **Exact Tags**: Use the tags exactly as written in `supported_tags.md`.
