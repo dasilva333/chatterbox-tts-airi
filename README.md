@@ -13,6 +13,25 @@ Chatterbox is a high-performance, OpenAI-compatible Text-to-Speech (TTS) server 
 
 ---
 
+## Prerequisites (Authentication)
+The Chatterbox models (especially the Turbo version) are hosted on Hugging Face. To download them automatically, you must set an environment variable with your Hugging Face Access Token:
+
+1.  **Get a Token**: Create a "Read" token at [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens).
+2.  **Set Environment Variable**:
+    - **Windows**: `setx HF_TOKEN "your_token_here"` (restart your terminal)
+    - **Linux/bash**: `export HF_TOKEN="your_token_here"`
+
+### One-Line Setup (Fast Track)
+If you don't want to set a system-wide variable, you can run this **once** to download the model and start the server:
+
+```batch
+set HF_TOKEN=your_token_here && run_server.bat --mannerisms=catgirl --turbo
+```
+> [!NOTE]  
+> You only need the token for the **first run** while the model is downloading. After that, the files are cached locally and you can run `run_server.bat` normally.
+
+---
+
 ## Installation & Setup
 1. **Clone the Repository**:
    ```bash

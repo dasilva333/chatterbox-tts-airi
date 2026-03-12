@@ -98,6 +98,10 @@ def preprocess_text(text: str, profile_name: str) -> str:
 # Initialize the model
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 if args.turbo:
+    if "HF_TOKEN" not in os.environ and "HUGGING_FACE_HUB_TOKEN" not in os.environ:
+        print("WARNING: HF_TOKEN environment variable not found. Downloading the Turbo model may fail if you are not authenticated.")
+        print("Please set your token: 'set HF_TOKEN=your_token_here' before running.")
+    
     from chatterbox.tts_turbo import ChatterboxTurboTTS
     print(f"Loading Chatterbox Turbo model on {DEVICE}...")
     model = ChatterboxTurboTTS.from_pretrained(DEVICE)
