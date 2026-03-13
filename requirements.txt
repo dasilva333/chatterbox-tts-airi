@@ -1,0 +1,7 @@
+numpy<2
+typing_extensions>=4.10.0
+fastapi
+uvicorn
+soundfile
+pydantic
+git+https://github.com/resemble-ai/chatterbox.git

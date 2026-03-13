@@ -32,40 +32,48 @@ set HF_TOKEN=your_token_here && run_server.bat --mannerisms=catgirl --turbo
 
 ---
 
+## Hardware & Compatibility
+Chatterbox is designed to be flexible across different GPU generations. Depending on your hardware, you should choose the appropriate installation path:
+
+### ⚙️ Option A: Standard Hardware (RTX 20/30/40-Series)
+Most users should use the standard stable drivers:
+- **Environment**: CUDA 11.8 or 12.1 (Stable)
+- **Performance**: Reliable, standard synthesis speeds.
+
+### 🚀 Option B: Next-Gen Hardware (RTX 50-Series / Blackwell)
+If you have an **RTX 5090** or similar and encounter kernel errors (e.g., `torchvision::nms` missing):
+- **Environment**: PyTorch Nightly with **cu128** support.
+- **Performance**: High-throughput synthesis, especially in **Turbo Mode**.
+
+---
+
 ## Installation & Setup
 
-### Automated (Recommended)
-Run the provided installation script to set up the environment and dependencies:
+### ⚡ Automated Setup (Recommended)
+Run the provided installation script to automatically create the virtual environment and install base dependencies:
 ```bash
 install.bat
 ```
 
-### Manual
-1. **Clone & Environment**:
+### 🔧 Manual Installation
+1. **Prepare Environment**:
    ```bash
-   git clone https://github.com/dasilva333/chatterbox-tts-airi.git
-   cd chatterbox-tts-airi
    py -m venv venv
    .\venv\Scripts\activate
    ```
 
-2. **Install Dependencies**:
+2. **Install Core Dependencies**:
    ```bash
    pip install -r requirements.txt
    ```
 
-### Special Hardware Support (RTX 50-Series / Blackwell)
-If you encounter `RuntimeError: operator torchvision::nms does not exist` or `no kernel image is available` (common on RTX 5090):
-
-1. **Uninstall Standard Torch**:
-   ```bash
-   pip uninstall torch torchvision torchaudio
-   ```
-
-2. **Install Nightly cu128**:
-   ```bash
-   pip install --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128
-   ```
+3. **Hardware-Specific Optimization (Crucial)**:
+   - **For Standard GPUs**: (Already handled by `install.bat` / `requirements.txt`)
+   - **For RTX 50-Series**: Run these commands inside your activated `venv`:
+     ```bash
+     pip uninstall torch torchvision torchaudio
+     pip install --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128
+     ```
 
 ---
 
