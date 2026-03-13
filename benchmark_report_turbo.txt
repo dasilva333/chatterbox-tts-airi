@@ -1,0 +1,8 @@
+--- Chatterbox Inference Benchmark Report ---
+Device: cuda (Turbo: True)
+
+Length       | Chars  | Time (s)   | Chars/s   
+---------------------------------------------
+20 chars     | 41     | 6.054      | 6.77      
+60 chars     | 93     | 7.921      | 11.74     
+300 chars    | 386    | 16.499     | 23.40     

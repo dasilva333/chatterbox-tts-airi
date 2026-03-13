@@ -1,15 +1,26 @@
-import time
 import torch
-from chatterbox import ChatterboxTTS
-import numpy as np
+import time
+import argparse
+from pathlib import Path
 
 def benchmark():
+    parser = argparse.ArgumentParser(description="Chatterbox Benchmark Script")
+    parser.add_argument("--turbo", action="store_true", help="Benchmark the Turbo model")
+    args = parser.parse_args()
+
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    print(f"Benchmarking on {device}...")
+    is_turbo = args.turbo
+    
+    print(f"Benchmarking on {device} (Turbo: {is_turbo})...")
     
     # Load model
     start_load = time.time()
-    model = ChatterboxTTS.from_pretrained(device)
+    if is_turbo:
+        from chatterbox.tts_turbo import ChatterboxTurboTTS
+        model = ChatterboxTurboTTS.from_pretrained(device)
+    else:
+        from chatterbox import ChatterboxTTS
+        model = ChatterboxTTS.from_pretrained(device)
     end_load = time.time()
     print(f"Model loaded in {end_load - start_load:.2f}s")
 
@@ -35,7 +46,11 @@ def benchmark():
         print(f"Processing {label} ({len(text)} chars)...")
         start = time.time()
         with torch.no_grad():
-            model.generate(text)
+            if is_turbo:
+                # Turbo model generate doesn't take exaggeration
+                model.generate(text)
+            else:
+                model.generate(text, exaggeration=0.0)
         end = time.time()
         elapsed = end - start
         results[label] = {
@@ -51,13 +66,16 @@ def benchmark():
     for label, data in results.items():
         print(f"{label:<12} | {data['chars']:<6} | {data['time']:<10.3f} | {data['chars_per_sec']:<10.2f}")
     
-    with open("benchmark_report.txt", "w") as f:
+    report_name = "benchmark_report_turbo.txt" if is_turbo else "benchmark_report.txt"
+    with open(report_name, "w") as f:
         f.write("--- Chatterbox Inference Benchmark Report ---\n")
-        f.write(f"Device: {device}\n\n")
+        f.write(f"Device: {device} (Turbo: {is_turbo})\n\n")
         f.write(f"{'Length':<12} | {'Chars':<6} | {'Time (s)':<10} | {'Chars/s':<10}\n")
         f.write("-" * 45 + "\n")
         for label, data in results.items():
             f.write(f"{label:<12} | {data['chars']:<6} | {data['time']:<10.3f} | {data['chars_per_sec']:<10.2f}\n")
+    
+    print(f"\nReport saved to {report_name}")
 
 if __name__ == "__main__":
     benchmark()

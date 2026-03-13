@@ -1,13 +1,14 @@
 # Chatterbox TTS Server
 
-Chatterbox is a high-performance, OpenAI-compatible Text-to-Speech (TTS) server designed for expressive character synthesis. It features dynamic voice cloning, persona-based text preprocessing, and advanced emotion tag support.
+Chatterbox is a high-performance, OpenAI-compatible Text-to-Speech (TTS) server optimized for **AIRI**. It features dynamic voice cloning, persona-based text preprocessing, and a specialized queuing system to handle high-concurrency requests.
 
 ## Features
-- **OpenAI Compatible**: Seamlessly integrates with clients like SillyTavern.
+- **OpenAI Compatible**: Seamlessly integrates with any OpenAI-compatible TTS client.
 - **Voice Cloning**: Clone any voice by simply placing a 6-second `.wav` or `.mp3` clip in the `voices/` directory.
 - **Mannerisms**: Customize character-specific mannerisms, fillers (e.g., `~` mappings), and text replacements via `profiles.json`.
 - **Emotion Tags**: Trigger specific sounds like `[laughter]`, `[sigh]`, or `[whisper]` using square bracket tags.
-- **Performance Optimized**: Features asynchronous request queuing and model priming for near-instant synthesis.
+- **Optimized for AIRI**: Specially designed to handle AIRI's parallel request pattern by converting them into a high-performance sequential queue, protecting GPU resources while maintaining low-latency responses.
+- **Model Priming**: Features automatic model priming for near-instant synthesis during active sessions.
 - **Turbo Mode**: Supports the high-speed `ChatterboxTurboTTS` for near-real-time synthesis.
 - **OGG Opus Support**: Natively streams high-quality, low-bandwidth OGG Opus audio.
 
@@ -111,30 +112,43 @@ Manage character-specific logic:
 
 ---
 
-## Benchmark Results: A Performance Spectrum
-The following results compare performance across two ends of the hardware spectrum: the **RTX 4070 Mobile** (baseline) and the **RTX 5090** (Blackwell).
+## Benchmark Results (CUDA)
 
-### 1. RTX 5090 (Blackwell)
+### RTX 5090 (Blackwell)
 *Environment: PyTorch Nightly cu128*
 
-| Model | Length | Chars | Time (s) | Chars/s |
-| :--- | :--- | :--- | :--- | :--- |
-| **Turbo** | 20 chars | 41 | 2.515 | **16.30** |
-| **Turbo** | 60 chars | 93 | 3.849 | **24.16** |
-| **Turbo** | 300 chars | 386 | 17.953 | **21.50** |
-| | | | | |
-| **Standard** | 20 chars | 41 | 7.062 | 5.81 |
-| **Standard** | 60 chars | 93 | 8.071 | 11.52 |
-| **Standard** | 300 chars | 386 | 32.237 | 11.97 |
+**Turbo Model (`--turbo`)**
+| Length | Chars | Time (s) | Chars/s |
+| :--- | :--- | :--- | :--- |
+| 20 chars | 41 | 2.515 | 16.30 |
+| 60 chars | 93 | 3.849 | 24.16 |
+| 300 chars | 386 | 17.953 | 21.50 |
 
-### 2. RTX 4070 Mobile (Original Baseline)
+**Standard Model**
+| Length | Chars | Time (s) | Chars/s |
+| :--- | :--- | :--- | :--- |
+| 20 chars | 41 | 7.062 | 5.81 |
+| 60 chars | 93 | 8.071 | 11.52 |
+| 300 chars | 386 | 32.237 | 11.97 |
+
+---
+
+### RTX 4070 Mobile (Baseline)
 *Environment: Standard cu118*
 
-| Model | Length | Chars | Time (s) | Chars/s |
-| :--- | :--- | :--- | :--- | :--- |
-| **Standard** | 20 chars | 41 | 7.609 | 5.39 |
-| **Standard** | 60 chars | 93 | 13.182 | 7.06 |
-| **Standard** | 300 chars | 386 | 81.751 | 4.72 |
+**Turbo Model (`--turbo`)**
+| Length | Chars | Time (s) | Chars/s |
+| :--- | :--- | :--- | :--- |
+| 20 chars | 41 | 6.054 | 6.77 |
+| 60 chars | 93 | 7.921 | 11.74 |
+| 300 chars | 386 | 16.499 | 23.40 |
+
+**Standard Model**
+| Length | Chars | Time (s) | Chars/s |
+| :--- | :--- | :--- | :--- |
+| 20 chars | 41 | 7.609 | 5.39 |
+| 60 chars | 93 | 13.182 | 7.06 |
+| 300 chars | 386 | 81.751 | 4.72 |
 
 ---
 
