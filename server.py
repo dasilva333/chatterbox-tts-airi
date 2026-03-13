@@ -17,6 +17,7 @@ import json
 import random
 import argparse
 from pathlib import Path
+import time
 
 app = FastAPI(title="Chatterbox OpenAI Compatible Server")
 
@@ -115,7 +116,7 @@ print("Model loaded successfully.")
 synth_lock = asyncio.Lock()
 
 # Hardcode Ivy voice path and prime the model
-IVY_VOICE_PATH = str(BASE_DIR / "voices" / "zenbara.wav")
+IVY_VOICE_PATH = str(BASE_DIR / "voices" / "ivy.mp3")
 print(f"Pre-sampling/Priming default voice: {IVY_VOICE_PATH}")
 # This calculates the embeddings and keeps them in model.conds
 model.prepare_conditionals(IVY_VOICE_PATH)
@@ -149,6 +150,7 @@ class SpeechRequest(BaseModel):
 
 @app.post("/v1/audio/speech")
 async def speech(request: SpeechRequest):
+    start_time = time.time()
     async with synth_lock:
         try:
             # Pre-process text based on the active profile
@@ -201,6 +203,10 @@ async def speech(request: SpeechRequest):
                 sf.write(buffer, wav_data, model.sr, format='WAV')
                 media_type = "audio/wav"
                 
+            latency = time.time() - start_time
+            print(f"--- Request Complete ---")
+            print(f"Total Latency: {latency:.3f}s")
+            
             return Response(content=buffer.getvalue(), media_type=media_type)
             
         except Exception as e:

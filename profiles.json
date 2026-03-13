@@ -34,5 +34,13 @@
             { "pattern": "\\b[oO]_[oO]\\b", "replacement": " [sigh] ... " }
         ],
         "narrative": { "rate": "x-slow", "volume": "soft" }
+    },
+    "wired_goddess": {
+        "tilde": [".. desu", "[sigh]", "[exhale]"],
+        "emoticons": [
+            { "pattern": "\\b0_0\\b", "replacement": " [gasp] " },
+            { "pattern": "\\b[oO]_[oO]\\b", "replacement": " [gasp] " }
+        ],
+        "narrative": { "rate": "x-slow", "volume": "soft" }
     }
 }
