@@ -33,25 +33,39 @@ set HF_TOKEN=your_token_here && run_server.bat --mannerisms=catgirl --turbo
 ---
 
 ## Installation & Setup
-1. **Clone the Repository**:
+
+### Automated (Recommended)
+Run the provided installation script to set up the environment and dependencies:
+```bash
+install.bat
+```
+
+### Manual
+1. **Clone & Environment**:
    ```bash
    git clone https://github.com/dasilva333/chatterbox-tts-airi.git
    cd chatterbox-tts-airi
-   ```
-
-2. **Initialize Environment**:
-   Run the following to set up the virtual environment and install dependencies:
-   ```bash
    py -m venv venv
    .\venv\Scripts\activate
-   pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
-   pip install git+https://github.com/resemble-ai/chatterbox.git fastapi uvicorn soundfile pydantic
    ```
 
-3. **Prepare Voices**:
-   Place your reference audio clips (6 seconds recommended) in the `voices/` folder.
-   - `ivy.mp3` (Default)
-   - `zenbara.wav` (New character)
+2. **Install Dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+### Special Hardware Support (RTX 50-Series / Blackwell)
+If you encounter `RuntimeError: operator torchvision::nms does not exist` or `no kernel image is available` (common on RTX 5090):
+
+1. **Uninstall Standard Torch**:
+   ```bash
+   pip uninstall torch torchvision torchaudio
+   ```
+
+2. **Install Nightly cu128**:
+   ```bash
+   pip install --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128
+   ```
 
 ---
 
@@ -89,27 +103,37 @@ Manage character-specific logic:
 
 ---
 
-## Benchmark Results (GTX 5090)
-The following results reflect performance on **high-end hardware (GTX 5090)** using `torch.cuda`. Turbo mode offers a ~3x speedup for typical synthesis tasks.
+## Benchmark Results: A Performance Spectrum
+The following results compare performance across two ends of the hardware spectrum: the **RTX 4070 Mobile** (baseline) and the **RTX 5090** (Blackwell).
 
-### Standard Model
-| Length | Chars | Time (s) | Chars/s |
-| :--- | :--- | :--- | :--- |
-| 20 chars | 41 | 7.062 | 5.81 |
-| 60 chars | 93 | 13.182 | 7.06 |
-| 300 chars | 386 | 81.751 | 4.72 |
+### 1. RTX 5090 (Blackwell)
+*Environment: PyTorch Nightly cu128*
 
-### Turbo Model
-| Length | Chars | Time (s) | Chars/s |
-| :--- | :--- | :--- | :--- |
-| 20 chars | 41 | 2.515 | 16.30 |
-| 60 chars | -- | TBD | -- |
-| 300 chars | -- | TBD | -- |
+| Model | Length | Chars | Time (s) | Chars/s |
+| :--- | :--- | :--- | :--- | :--- |
+| **Turbo** | 20 chars | 41 | 2.515 | **16.30** |
+| **Turbo** | 60 chars | 93 | 3.849 | **24.16** |
+| **Turbo** | 300 chars | 386 | 17.953 | **21.50** |
+| | | | | |
+| **Standard** | 20 chars | 41 | 7.062 | 5.81 |
+| **Standard** | 60 chars | 93 | 8.071 | 11.52 |
+| **Standard** | 300 chars | 386 | 32.237 | 11.97 |
+
+### 2. RTX 4070 Mobile (Original Baseline)
+*Environment: Standard cu118*
+
+| Model | Length | Chars | Time (s) | Chars/s |
+| :--- | :--- | :--- | :--- | :--- |
+| **Standard** | 20 chars | 41 | 7.609 | 5.39 |
+| **Standard** | 60 chars | 93 | 13.182 | 7.06 |
+| **Standard** | 300 chars | 386 | 81.751 | 4.72 |
 
 ---
 
 ## Project Structure
 - **`server.py`**: The FastAPI wrapper. Scans `voices/`, supports `--profile`, and returns OGG Opus.
+- **`install.bat`**: Automated setup and dependency installation script.
+- **`requirements.txt`**: Pinned dependencies for environment stability.
 - **`runner.py`**: CLI script for direct OGG Opus generation.
 - **`benchmark.py`**: Script used for gathering generation timings.
 - **`supported_tags.md`**: Reference list of verified sound/emotion tokens.
