@@ -89,14 +89,22 @@ Manage character-specific logic:
 
 ---
 
-## Benchmark Results (CUDA)
-The results reflect the true capabilities of Chatterbox when hardware acceleration is properly applied via `torch.cuda`:
+## Benchmark Results (GTX 5090)
+The following results reflect performance on **high-end hardware (GTX 5090)** using `torch.cuda`. Turbo mode offers a ~3x speedup for typical synthesis tasks.
 
+### Standard Model
 | Length | Chars | Time (s) | Chars/s |
 | :--- | :--- | :--- | :--- |
-| 20 chars | 41 | 7.609 | 5.39 |
+| 20 chars | 41 | 7.062 | 5.81 |
 | 60 chars | 93 | 13.182 | 7.06 |
 | 300 chars | 386 | 81.751 | 4.72 |
+
+### Turbo Model
+| Length | Chars | Time (s) | Chars/s |
+| :--- | :--- | :--- | :--- |
+| 20 chars | 41 | 2.515 | 16.30 |
+| 60 chars | -- | TBD | -- |
+| 300 chars | -- | TBD | -- |
 
 ---
 
