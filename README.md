@@ -5,6 +5,8 @@ Chatterbox is a high-performance, OpenAI-compatible Text-to-Speech (TTS) server 
 ## Features
 - **OpenAI Compatible**: Seamlessly integrates with any OpenAI-compatible TTS client.
 - **Voice Cloning**: Clone any voice by simply placing a 6-second `.wav` or `.mp3` clip in the `voices/` directory.
+- **Presets (Virtual Voices)**: Create complex voice configurations that bind a base voice to a mannerism profile and specific model parameters.
+- **Hot-Reloading**: Automatically detects changes to `profiles.json` and `presets.json` and reloads them on the fly without a server restart.
 - **Mannerisms**: Customize character-specific mannerisms, fillers (e.g., `~` mappings), and text replacements via `profiles.json`.
 - **Emotion Tags**: Trigger specific sounds like `[laughter]`, `[sigh]`, or `[whisper]` using square bracket tags.
 - **Optimized for AIRI**: Specially designed to handle AIRI's parallel request pattern by converting them into a high-performance sequential queue, protecting GPU resources while maintaining low-latency responses.
@@ -99,12 +101,29 @@ python runner.py zenbara "Hello Phil... [sigh] ~ how are you? ~" --turbo
 
 ## Configuration & Customization
 
+### Presets (`presets.json`)
+Presets are "Virtual Voices" that simplify character management. They map a unique ID (e.g., `Lain (Acting)`) to a base voice and a mannerism profile.
+
+```json
+{
+  "Lain (Acting)": {
+    "voice_file": "lain",
+    "mannerism_profile": "wired_goddess",
+    "exaggeration": 0.0,
+    "ui_expressions": ["[whisper]", "[sigh]", "[gasp]"]
+  }
+}
+```
+
 ### Mannerisms (`profiles.json`)
 Manage character-specific logic:
 - **`tilde`**: Mappings for the `~` character (e.g., `nyan` for catgirl, `bro` for kappybara).
 - **`hmph`**: Custom pronunciations for "hmph" variants (e.g., `hahmf`).
 - **`emoticons`**: Regex-based replacements for patterns like `0_0`.
 - **`narrative`**: Character-specific speech settings for `*text*` (rate, volume).
+
+### Hot-Reloading
+The server monitors the modification timestamps of `profiles.json` and `presets.json`. You can manually edit these files while the server is running, and the changes will be picked up instantly on the next API request.
 
 ### Emotion & Expressiveness Tips
 - **Exact Tags**: Use the tags exactly as written in `supported_tags.md`.
@@ -153,23 +172,29 @@ Manage character-specific logic:
 ---
 
 ## Project Structure
-- **`server.py`**: The FastAPI wrapper. Scans `voices/`, supports `--profile`, and returns OGG Opus.
+- **`server.py`**: The FastAPI wrapper. Supports presets, hot-reloading, and dynamic resolution.
+- **`presets.json`**: JSON store for virtual voice configurations.
+- **`profiles.json`**: JSON store for character mannerisms.
 - **`install.bat`**: Automated setup and dependency installation script.
 - **`requirements.txt`**: Pinned dependencies for environment stability.
 - **`runner.py`**: CLI script for direct OGG Opus generation.
 - **`benchmark.py`**: Script used for gathering generation timings.
 - **`supported_tags.md`**: Reference list of verified sound/emotion tokens.
-- **`profiles.json`**: JSON store for character mannerisms.
 - **`voices/`**: Directory for voice cloning source files.
 
 ---
 
-## Voice Discovery
-Clients can discover available voices by calling:
-- `GET /v1/voices`
-- `GET /v1/audio/voices`
+## API & Discovery
+Clients can discover capabilities and voices via:
+- `GET /v1/voices`: Returns a merged list of native voice files and virtual presets.
+- `GET /v1/audio/voices`: Alias for the above.
+- `GET /chatterbox/capabilities`: Returns available raw voice files, mannerism profiles, and TTS modes.
 
-This returns a JSON list of all voice files detected in the `voices/` folder. Any unknown voice requested via API will gracefully fallback to **Ivy**.
+### Synthesis (OpenAI Compatible)
+**`POST /v1/audio/speech`**
+- `voice`: Can be a native voice (e.g., `ivy`) OR a preset ID (e.g., `Lain (Acting)`).
+- `input`: The text to synthesize, supporting tags and profiles.
+- `response_format`: `mp3` (OGG Opus) or `wav`.
 
 ---
 

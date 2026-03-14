@@ -39,15 +39,44 @@ args, unknown = parser.parse_known_args()
 # Load profiles
 BASE_DIR = Path(__file__).parent.absolute()
 PROFILES_PATH = BASE_DIR / "profiles.json"
+PRESETS_PATH = BASE_DIR / "presets.json"
+
 profiles = {}
-if PROFILES_PATH.exists():
-    with open(PROFILES_PATH, "r", encoding="utf-8") as f:
-        profiles = json.load(f)
-else:
-    print(f"Warning: profiles.json not found at {PROFILES_PATH}")
+presets = {}
+LAST_PROFILES_MTIME = 0
+LAST_PRESETS_MTIME = 0
+
+def load_config():
+    global profiles, presets, LAST_PROFILES_MTIME, LAST_PRESETS_MTIME
+    
+    # Reload Profiles
+    if PROFILES_PATH.exists():
+        mtime = os.path.getmtime(PROFILES_PATH)
+        if mtime > LAST_PROFILES_MTIME:
+            try:
+                with open(PROFILES_PATH, "r", encoding="utf-8") as f:
+                    profiles = json.load(f)
+                LAST_PROFILES_MTIME = mtime
+                print(f"Reloaded profiles.json (updated {time.ctime(mtime)})")
+            except Exception as e:
+                print(f"Error loading profiles.json: {e}")
+    
+    # Reload Presets
+    if PRESETS_PATH.exists():
+        mtime = os.path.getmtime(PRESETS_PATH)
+        if mtime > LAST_PRESETS_MTIME:
+            try:
+                with open(PRESETS_PATH, "r", encoding="utf-8") as f:
+                    presets = json.load(f)
+                LAST_PRESETS_MTIME = mtime
+                print(f"Reloaded presets.json (updated {time.ctime(mtime)})")
+            except Exception as e:
+                print(f"Error loading presets.json: {e}")
+
+# Initial load
+load_config()
 
 ACTIVE_PROFILE_NAME = args.mannerisms
-ACTIVE_PROFILE = profiles.get(ACTIVE_PROFILE_NAME, {})
 print(f"Active Mannerisms: {ACTIVE_PROFILE_NAME}")
 
 # Emoji regex: Strips pictographic emoji but preserves digits 0-9.
@@ -150,19 +179,33 @@ class SpeechRequest(BaseModel):
 
 @app.post("/v1/audio/speech")
 async def speech(request: SpeechRequest):
+    load_config()
     start_time = time.time()
     async with synth_lock:
         try:
-            # Pre-process text based on the active profile
-            processed_input = preprocess_text(request.input, ACTIVE_PROFILE_NAME)
+            # 1. Preset Resolution Logic
+            target_voice = request.voice
+            target_profile = ACTIVE_PROFILE_NAME
+            target_exaggeration = request.exaggeration
+
+            if target_voice in presets:
+                preset = presets[target_voice]
+                print(f"Resolving Preset: {target_voice}")
+                target_voice = preset.get("voice_file", "ivy")
+                target_profile = preset.get("mannerism_profile", target_profile)
+                target_exaggeration = preset.get("exaggeration", target_exaggeration)
+
+            # 2. Pre-process text based on resolved profile
+            processed_input = preprocess_text(request.input, target_profile)
             
-            # Resolve voice path (dynamic with Ivy fallback)
-            voice_path = resolve_voice_path(request.voice)
+            # 3. Resolve voice path (dynamic with Ivy fallback)
+            voice_path = resolve_voice_path(target_voice)
             
             print(f"--- Synthesis Request ---")
             print(f"Original Input: {request.input[:50]}...")
             print(f"Processed Input: {processed_input[:50]}...")
-            print(f"Requested Voice: {request.voice}")
+            print(f"Requested Voice: {request.voice} -> {target_voice}")
+            print(f"Resolved Profile: {target_profile}")
             print(f"Resolved Voice Path: {voice_path}")
 
             # Dynamic Priming: If we haven't seen this voice before, prime it
@@ -183,7 +226,7 @@ async def speech(request: SpeechRequest):
                 wav_tensor = model.generate(
                     processed_input, 
                     audio_prompt_path=voice_path, 
-                    exaggeration=request.exaggeration
+                    exaggeration=target_exaggeration
                 )
             
             # Convert to numpy
@@ -230,9 +273,11 @@ async def list_models():
 @app.get("/v1/voices")
 @app.get("/v1/audio/voices")
 async def list_voices():
+    load_config()
     voices_dir = BASE_DIR / "voices"
     available_voices = []
     
+    # 1. Native Voices
     if voices_dir.exists():
         for file in voices_dir.iterdir():
             if file.suffix.lower() in [".wav", ".mp3", ".ogg"]:
@@ -240,10 +285,36 @@ async def list_voices():
                     "voice_id": file.stem.lower(),
                     "name": file.stem.capitalize(),
                     "preview_url": None,
-                    "provider": "chatterbox"
+                    "provider": "chatterbox",
+                    "type": "native"
                 })
     
+    # 2. Virtual Voices (Presets)
+    for preset_id, preset_data in presets.items():
+        available_voices.append({
+            "voice_id": preset_id,
+            "name": preset_id,
+            "provider": "chatterbox",
+            "type": "virtual",
+            "metadata": preset_data
+        })
+    
     return {"voices": available_voices}
+
+@app.get("/chatterbox/capabilities")
+async def get_capabilities():
+    """Returns available voice files, mannerism profiles, and TTS modes."""
+    load_config()
+    voices_dir = BASE_DIR / "voices"
+    voice_files = []
+    if voices_dir.exists():
+        voice_files = [f.stem.lower() for f in voices_dir.iterdir() if f.suffix.lower() in [".wav", ".mp3", ".ogg"]]
+    
+    return {
+        "voices": voice_files,
+        "profiles": list(profiles.keys()),
+        "modes": ["full", "turbo"]
+    }
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=args.port)

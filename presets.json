@@ -1,0 +1,10 @@
+{
+  "Lain (Acting)": {
+    "voice_file": "lain",
+    "tts_model": "full",
+    "exaggeration": 0.0,
+    "mannerism_profile": "wired_goddess",
+    "ui_expressions": ["[whisper]", "[sigh]", "[gasp]", "[exhale]"],
+    "ui_mannerisms": ["~", "0_0"]
+  }
+}
