@@ -1,46 +1,133 @@
 {
-    "catgirl": {
-        "hmph": "hahmf",
-        "tilde": ["nyan", "meow", "mew", "[meow]"],
-        "emoticons": [
-            { "pattern": "\\b0_0\\b", "replacement": " [meow] " },
-            { "pattern": "\\b[oO]_[oO]\\b", "replacement": " [mew]? " }
-        ],
-        "narrative": { "rate": "x-slow", "volume": "soft" }
-    },
-    "bunnygirl": {
-        "hmph": "humff",
-        "tilde": ["pyon", "boing", "desu", "[gasp]"],
-        "emoticons": [
-            { "pattern": "\\b0_0\\b", "replacement": " [gasp] twitch twitch " },
-            { "pattern": "\\b[oO]_[oO]\\b", "replacement": " [gasp] twitch twitch " }
-        ],
-        "narrative": { "rate": "x-slow", "volume": "soft" }
-    },
-    "demon_imp": {
-        "hmph": "heumf",
-        "tilde": ["[hek]", "[laughter] cackle", "[fufufu]"],
-        "emoticons": [
-            { "pattern": "\\b0_0\\b", "replacement": " [hiss] " },
-            { "pattern": "\\b[oO]_[oO]\\b", "replacement": " [growl] " }
-        ],
-        "narrative": { "rate": "slow", "volume": "medium" }
-    },
-    "kappybara": {
-        "hmph": "mmnnf",
-        "tilde": ["chill", "bro", "relaxed", "[sigh]", "[exhale]"],
-        "emoticons": [
-            { "pattern": "\\b0_0\\b", "replacement": " [sigh] ... " },
-            { "pattern": "\\b[oO]_[oO]\\b", "replacement": " [sigh] ... " }
-        ],
-        "narrative": { "rate": "x-slow", "volume": "soft" }
-    },
-    "wired_goddess": {
-        "tilde": [".. desu", "[sigh]", "[exhale]"],
-        "emoticons": [
-            { "pattern": "\\b0_0\\b", "replacement": " [gasp] " },
-            { "pattern": "\\b[oO]_[oO]\\b", "replacement": " [gasp] " }
-        ],
-        "narrative": { "rate": "x-slow", "volume": "soft" }
+  "catgirl": {
+    "hmph": "hahmf",
+    "tilde": [
+      "nyan",
+      "meow",
+      "mew",
+      "[meow]"
+    ],
+    "emoticons": [
+      {
+        "pattern": "\\b0_0\\b",
+        "replacement": " [meow] "
+      },
+      {
+        "pattern": "\\b[oO]_[oO]\\b",
+        "replacement": " [mew]? "
+      }
+    ],
+    "narrative": {
+      "rate": "x-slow",
+      "volume": "soft"
     }
+  },
+  "bunnygirl": {
+    "hmph": "humff",
+    "tilde": [
+      "pyon",
+      "boing",
+      "desu",
+      "[gasp]"
+    ],
+    "emoticons": [
+      {
+        "pattern": "\\b0_0\\b",
+        "replacement": " [gasp] twitch twitch "
+      },
+      {
+        "pattern": "\\b[oO]_[oO]\\b",
+        "replacement": " [gasp] twitch twitch "
+      }
+    ],
+    "narrative": {
+      "rate": "x-slow",
+      "volume": "soft"
+    }
+  },
+  "demon_imp": {
+    "hmph": "heumf",
+    "tilde": [
+      "[hek]",
+      "[laughter] cackle",
+      "[fufufu]"
+    ],
+    "emoticons": [
+      {
+        "pattern": "\\b0_0\\b",
+        "replacement": " [hiss] "
+      },
+      {
+        "pattern": "\\b[oO]_[oO]\\b",
+        "replacement": " [growl] "
+      }
+    ],
+    "narrative": {
+      "rate": "slow",
+      "volume": "medium"
+    }
+  },
+  "kappybara": {
+    "hmph": "mmnnf",
+    "tilde": [
+      "chill",
+      "bro",
+      "relaxed",
+      "[sigh]",
+      "[exhale]"
+    ],
+    "emoticons": [
+      {
+        "pattern": "\\b0_0\\b",
+        "replacement": " [sigh] ... "
+      },
+      {
+        "pattern": "\\b[oO]_[oO]\\b",
+        "replacement": " [sigh] ... "
+      }
+    ],
+    "narrative": {
+      "rate": "x-slow",
+      "volume": "soft"
+    }
+  },
+  "wired_goddess": {
+    "tilde": [
+      ".. desu",
+      "[sigh]",
+      "[exhale]"
+    ],
+    "emoticons": [
+      {
+        "pattern": "\\b0_0\\b",
+        "replacement": " [gasp] "
+      },
+      {
+        "pattern": "\\b[oO]_[oO]\\b",
+        "replacement": " [gasp] "
+      }
+    ],
+    "narrative": {
+      "rate": "x-slow",
+      "volume": "soft"
+    }
+  },
+  "doggirl": {
+    "tilde": [
+      "nya",
+      "woof",
+      "desu"
+    ],
+    "emoticons": [
+      {
+        "pattern": "\\b0_0\\b",
+        "replacement": "[meow]"
+      },
+      {
+        "pattern": "\\b[oO]_[oO]\\b",
+        "replacement": "[mew]?"
+      }
+    ],
+    "hmph": "[sigh]"
+  }
 }

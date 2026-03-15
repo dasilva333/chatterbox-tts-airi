@@ -1,10 +1,55 @@
 {
   "Lain (Acting)": {
-    "voice_file": "lain",
+    "voice_file": "lain2",
     "tts_model": "full",
-    "exaggeration": 0.0,
+    "exaggeration": 0.2,
     "mannerism_profile": "wired_goddess",
-    "ui_expressions": ["[whisper]", "[sigh]", "[gasp]", "[exhale]"],
-    "ui_mannerisms": ["~", "0_0"]
+    "ui_expressions": [
+      "[whisper]",
+      "[sigh]",
+      "[gasp]",
+      "[exhale]"
+    ],
+    "ui_mannerisms": [
+      "~",
+      "0_0"
+    ]
+  },
+  "preset_zenbara": {
+    "voice_file": "zenbara",
+    "tts_model": "full",
+    "exaggeration": 0.25,
+    "mannerism_profile": "kappybara",
+    "ui_expressions": [
+      "[laughter]",
+      "[giggle]",
+      "[guffaw]",
+      "[sigh]",
+      "[gasp]",
+      "[groan]",
+      "[cry]",
+      "[mumble]",
+      "[whisper]",
+      "[meow]",
+      "[bark]",
+      "[howl]",
+      "[sneeze]",
+      "[cough]",
+      "[clear_throat]",
+      "[sniff]",
+      "[snore]",
+      "[chew]",
+      "[sip]",
+      "[kiss]",
+      "[shhh]",
+      "[humming]",
+      "[singing]",
+      "[music]",
+      "[whistle]",
+      "[exhale]",
+      "[inhale]",
+      "[gibberish]"
+    ],
+    "ui_mannerisms": []
   }
 }

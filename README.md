@@ -6,6 +6,7 @@ Chatterbox is a high-performance, OpenAI-compatible Text-to-Speech (TTS) server 
 - **OpenAI Compatible**: Seamlessly integrates with any OpenAI-compatible TTS client.
 - **Voice Cloning**: Clone any voice by simply placing a 6-second `.wav` or `.mp3` clip in the `voices/` directory.
 - **Presets (Virtual Voices)**: Create complex voice configurations that bind a base voice to a mannerism profile and specific model parameters.
+- **AIRI Management Studio**: AIRI can manage presets and profiles directly through the Chatterbox provider page instead of hand-editing JSON files.
 - **Hot-Reloading**: Automatically detects changes to `profiles.json` and `presets.json` and reloads them on the fly without a server restart.
 - **Mannerisms**: Customize character-specific mannerisms, fillers (e.g., `~` mappings), and text replacements via `profiles.json`.
 - **Emotion Tags**: Trigger specific sounds like `[laughter]`, `[sigh]`, or `[whisper]` using square bracket tags.
@@ -13,6 +14,21 @@ Chatterbox is a high-performance, OpenAI-compatible Text-to-Speech (TTS) server 
 - **Model Priming**: Features automatic model priming for near-instant synthesis during active sessions.
 - **Turbo Mode**: Supports the high-speed `ChatterboxTurboTTS` for near-real-time synthesis.
 - **OGG Opus Support**: Natively streams high-quality, low-bandwidth OGG Opus audio.
+
+---
+
+## AIRI Integration
+
+Chatterbox now has a first-class management flow inside AIRI. The release became available on your forks with:
+- `airi` commit `7c5ec4b1`: Chatterbox studio CRUD UI
+- `chatterbox-tts-airi` commit `dd6d484`: preset/profile CRUD endpoints
+
+In practice:
+- **Presets** choose the base voice, TTS mode, exaggeration, and linked profile.
+- **Profiles** define text transformations such as tilde replacements, hmph replacements, and emoticon-to-sound mappings.
+- AIRI uses the provider page to create, edit, and delete both without restarting the Chatterbox server.
+
+For the full workflow and editing model, see [USAGE.md](./USAGE.md).
 
 ---
 
@@ -149,6 +165,28 @@ The server monitors the modification timestamps of `profiles.json` and `presets.
 | 20 chars | 41 | 7.062 | 5.81 |
 | 60 chars | 93 | 8.071 | 11.52 |
 | 300 chars | 386 | 32.237 | 11.97 |
+
+---
+
+### RTX 3070 (Mid-Range Baseline)
+*Environment: Standard Desktop Hardware*
+
+**Standard Model**
+| Length | Chars | Time (s) | Chars/s |
+| :--- | :--- | :--- | :--- |
+| 20 chars | 41 | 3.92 | 10.46 |
+| 60 chars | 93 | 6.89 | 13.50 |
+| 300 chars | 386 | 19.01 | 20.30 |
+
+**Turbo Model (`--turbo`)**
+| Length | Chars | Time (s) | Chars/s |
+| :--- | :--- | :--- | :--- |
+| 20 chars | 41 | 11.88 | 3.45 |
+| 60 chars | 93 | 20.86 | 4.46 |
+| 300 chars | 386 | 121.15 | 3.19 |
+
+> [!WARNING]  
+> **Performance Inversion**: On the RTX 3070, the **Standard** model is significantly faster than the Turbo model. This is likely due to VRAM limitations (8GB) or lack of specific kernel optimizations for this architecture in the Turbo model's dependency stack. Stick to the Standard model on this hardware.
 
 ---
 
