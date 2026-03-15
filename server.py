@@ -15,6 +15,7 @@ import re
 import json
 import random
 import argparse
+import csv
 from pathlib import Path
 import time
 
@@ -39,16 +40,19 @@ args, unknown = parser.parse_known_args()
 BASE_DIR = Path(__file__).parent.absolute()
 PROFILES_PATH = BASE_DIR / "profiles.json"
 PRESETS_PATH = BASE_DIR / "presets.json"
+SUPPORTED_TAGS_PATH = BASE_DIR / "supported_tags.csv"
 
 profiles = {}
 presets = {}
+supported_tags = []
 LAST_PROFILES_MTIME = 0
 LAST_PRESETS_MTIME = 0
+LAST_SUPPORTED_TAGS_MTIME = 0
 
 VOICE_FILE_EXTENSIONS = [".wav", ".mp3", ".ogg"]
 
 def load_config():
-    global profiles, presets, LAST_PROFILES_MTIME, LAST_PRESETS_MTIME
+    global profiles, presets, supported_tags, LAST_PROFILES_MTIME, LAST_PRESETS_MTIME, LAST_SUPPORTED_TAGS_MTIME
     
     # Reload Profiles
     if PROFILES_PATH.exists():
@@ -73,6 +77,31 @@ def load_config():
                 print(f"Reloaded presets.json (updated {time.ctime(mtime)})")
             except Exception as e:
                 print(f"Error loading presets.json: {e}")
+
+    # Reload Supported Tags
+    if SUPPORTED_TAGS_PATH.exists():
+        mtime = os.path.getmtime(SUPPORTED_TAGS_PATH)
+        if mtime > LAST_SUPPORTED_TAGS_MTIME:
+            try:
+                loaded_tags = []
+                with open(SUPPORTED_TAGS_PATH, "r", encoding="utf-8", newline="") as f:
+                    reader = csv.DictReader(f)
+                    for row in reader:
+                        category = str(row.get("category", "")).strip()
+                        tag = str(row.get("tag", "")).strip()
+                        description = str(row.get("description", "")).strip()
+                        if not category or not tag:
+                            continue
+                        loaded_tags.append({
+                            "category": category,
+                            "tag": tag,
+                            "description": description,
+                        })
+                supported_tags = loaded_tags
+                LAST_SUPPORTED_TAGS_MTIME = mtime
+                print(f"Reloaded supported_tags.csv (updated {time.ctime(mtime)})")
+            except Exception as e:
+                print(f"Error loading supported_tags.csv: {e}")
 
 def save_json(path: Path, data: Dict[str, Any]):
     temp_path = path.with_suffix(f"{path.suffix}.tmp")
@@ -290,6 +319,47 @@ def presets_using_profile(profile_id: str) -> List[str]:
         if preset_data.get("mannerism_profile") == profile_id
     ])
 
+def get_supported_expression_tags() -> List[Dict[str, str]]:
+    if supported_tags:
+        return supported_tags
+
+    fallback_tags = []
+    seen = set()
+    for preset_data in presets.values():
+        for tag in preset_data.get("ui_expressions", []):
+            normalized = str(tag).strip()
+            if not normalized or normalized in seen:
+                continue
+            seen.add(normalized)
+            fallback_tags.append({
+                "category": "effect",
+                "tag": normalized.strip("[]"),
+                "description": "",
+            })
+    return fallback_tags
+
+def get_supported_mannerisms() -> List[Dict[str, str]]:
+    available = []
+    if any(profile.get("tilde") for profile in profiles.values()):
+        available.append({
+            "id": "tilde",
+            "label": "Tilde",
+            "description": "Phrase fillers or trailing style markers triggered by ~.",
+        })
+    if any(profile.get("emoticons") for profile in profiles.values()):
+        available.append({
+            "id": "eyes",
+            "label": "Emoticon Replacements",
+            "description": "Emoticon-driven substitutions such as 0_0 or similar face patterns.",
+        })
+    if any(profile.get("hmph") for profile in profiles.values()):
+        available.append({
+            "id": "hmph",
+            "label": "Hmph Variants",
+            "description": "Regex-driven hmph-style interjection replacements.",
+        })
+    return available
+
 class SpeechRequest(BaseModel):
     model: str = "chatterbox"
     input: str
@@ -421,13 +491,20 @@ async def list_voices():
 
 @app.get("/chatterbox/capabilities")
 async def get_capabilities():
-    """Returns available voice files, mannerism profiles, and TTS modes."""
+    """Returns available voice files, profiles, TTS modes, and speech helper metadata."""
     load_config()
 
     return {
         "voices": list_voice_files(),
         "profiles": list(profiles.keys()),
-        "modes": ["full", "turbo"]
+        "modes": ["full", "turbo"],
+        "speech": {
+            "supportsPresets": True,
+            "supportsExpressionTags": True,
+            "supportsMannerisms": True,
+            "expressionTags": get_supported_expression_tags(),
+            "mannerisms": get_supported_mannerisms(),
+        },
     }
 
 @app.get("/chatterbox/presets")

@@ -1,5 +1,6 @@
 numpy<2
 typing_extensions>=4.10.0
+protobuf>=4.25.1
 fastapi
 uvicorn
 soundfile

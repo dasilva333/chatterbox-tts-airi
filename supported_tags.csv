@@ -1,0 +1,29 @@
+category,tag,description
+emotion,laughter,Spoken laughter
+emotion,giggle,Light playful laughter
+emotion,guffaw,Loud exaggerated laughter
+emotion,sigh,Soft reflective release
+emotion,gasp,Sharp intake from surprise or shock
+emotion,groan,Low vocal complaint or strain
+emotion,cry,Crying or tearful delivery
+emotion,mumble,Low quiet internal speech
+emotion,whisper,Very quiet secretive delivery
+sound,meow,Cat-like vocal sound
+sound,bark,Dog-like vocal sound
+sound,howl,Long animal-like howl
+sound,sneeze,Audible sneeze
+sound,cough,Audible cough
+sound,clear_throat,Audible throat clearing
+sound,sniff,Audible sniff
+sound,snore,Audible snoring
+sound,chew,Audible chewing
+sound,sip,Audible sipping
+sound,kiss,Audible kiss sound
+sound,shhh,Silencing sound
+sound,humming,Vocal humming without words
+sound,singing,Musical sung delivery
+sound,music,Musical vocalized output
+sound,whistle,Audible whistle
+sound,exhale,Audible release of breath
+sound,inhale,Audible intake of breath
+sound,gibberish,Nonsense vocalization
