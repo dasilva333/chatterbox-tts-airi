@@ -3,12 +3,11 @@ import torch.nn.functional as F
 import numpy as np
 import io
 import soundfile as sf
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
-from pydantic import BaseModel
-from typing import Optional, List, Union
-from chatterbox import ChatterboxTTS
+from pydantic import BaseModel, Field
+from typing import Optional, List, Union, Dict, Any
 import uvicorn
 import os
 import asyncio
@@ -46,6 +45,8 @@ presets = {}
 LAST_PROFILES_MTIME = 0
 LAST_PRESETS_MTIME = 0
 
+VOICE_FILE_EXTENSIONS = [".wav", ".mp3", ".ogg"]
+
 def load_config():
     global profiles, presets, LAST_PROFILES_MTIME, LAST_PRESETS_MTIME
     
@@ -72,6 +73,29 @@ def load_config():
                 print(f"Reloaded presets.json (updated {time.ctime(mtime)})")
             except Exception as e:
                 print(f"Error loading presets.json: {e}")
+
+def save_json(path: Path, data: Dict[str, Any]):
+    temp_path = path.with_suffix(f"{path.suffix}.tmp")
+    with open(temp_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+        f.write("\n")
+    os.replace(temp_path, path)
+
+def persist_profiles():
+    global LAST_PROFILES_MTIME
+    save_json(PROFILES_PATH, profiles)
+    LAST_PROFILES_MTIME = os.path.getmtime(PROFILES_PATH)
+
+def persist_presets():
+    global LAST_PRESETS_MTIME
+    save_json(PRESETS_PATH, presets)
+    LAST_PRESETS_MTIME = os.path.getmtime(PRESETS_PATH)
+
+def ensure_non_empty_id(value: str, kind: str) -> str:
+    normalized = value.strip()
+    if not normalized:
+        raise HTTPException(status_code=400, detail=f"{kind} id is required")
+    return normalized
 
 # Initial load
 load_config()
@@ -168,6 +192,103 @@ def resolve_voice_path(requested_voice: str) -> str:
     # Fallback to ivy
     print(f"Warning: Voice '{requested_voice}' not found in {voices_dir}. Falling back to Ivy.")
     return IVY_VOICE_PATH
+
+def list_voice_files() -> List[str]:
+    voices_dir = BASE_DIR / "voices"
+    if not voices_dir.exists():
+        return []
+
+    return sorted([
+        file.stem.lower()
+        for file in voices_dir.iterdir()
+        if file.suffix.lower() in VOICE_FILE_EXTENSIONS
+    ])
+
+class EmoticonRule(BaseModel):
+    pattern: str
+    replacement: str
+
+class NarrativeSettings(BaseModel):
+    rate: Optional[str] = None
+    volume: Optional[str] = None
+
+class PresetPayload(BaseModel):
+    id: str
+    voice_file: str
+    tts_model: str = "full"
+    exaggeration: float = 0.0
+    mannerism_profile: str = ""
+    ui_expressions: List[str] = Field(default_factory=list)
+    ui_mannerisms: List[str] = Field(default_factory=list)
+
+class ProfilePayload(BaseModel):
+    id: str
+    hmph: str = ""
+    tilde: List[str] = Field(default_factory=list)
+    emoticons: List[EmoticonRule] = Field(default_factory=list)
+    narrative: Optional[NarrativeSettings] = None
+
+def normalize_preset(payload: PresetPayload) -> Dict[str, Any]:
+    voice_files = list_voice_files()
+    voice_file = payload.voice_file.strip().lower()
+    if voice_file and voice_files and voice_file not in voice_files:
+        raise HTTPException(status_code=400, detail=f"Unknown voice file '{voice_file}'")
+
+    mannerism_profile = payload.mannerism_profile.strip()
+    if mannerism_profile and mannerism_profile not in profiles:
+        raise HTTPException(status_code=400, detail=f"Unknown profile '{mannerism_profile}'")
+
+    tts_model = payload.tts_model.strip().lower()
+    if tts_model not in {"full", "turbo"}:
+        raise HTTPException(status_code=400, detail=f"Unknown tts_model '{payload.tts_model}'")
+
+    return {
+        "voice_file": voice_file,
+        "tts_model": tts_model,
+        "exaggeration": float(payload.exaggeration),
+        "mannerism_profile": mannerism_profile,
+        "ui_expressions": [item.strip() for item in payload.ui_expressions if item.strip()],
+        "ui_mannerisms": [item.strip() for item in payload.ui_mannerisms if item.strip()],
+    }
+
+def normalize_profile(payload: ProfilePayload) -> Dict[str, Any]:
+    emoticons = []
+    for rule in payload.emoticons:
+        pattern = rule.pattern.strip()
+        replacement = rule.replacement.strip()
+        if not pattern or not replacement:
+            continue
+        emoticons.append({
+            "pattern": pattern,
+            "replacement": replacement,
+        })
+
+    profile: Dict[str, Any] = {
+        "tilde": [item.strip() for item in payload.tilde if item.strip()],
+        "emoticons": emoticons,
+    }
+
+    hmph = payload.hmph.strip()
+    if hmph:
+        profile["hmph"] = hmph
+
+    if payload.narrative:
+        narrative = {
+            key: value.strip()
+            for key, value in payload.narrative.model_dump().items()
+            if isinstance(value, str) and value.strip()
+        }
+        if narrative:
+            profile["narrative"] = narrative
+
+    return profile
+
+def presets_using_profile(profile_id: str) -> List[str]:
+    return sorted([
+        preset_id
+        for preset_id, preset_data in presets.items()
+        if preset_data.get("mannerism_profile") == profile_id
+    ])
 
 class SpeechRequest(BaseModel):
     model: str = "chatterbox"
@@ -274,20 +395,17 @@ async def list_models():
 @app.get("/v1/audio/voices")
 async def list_voices():
     load_config()
-    voices_dir = BASE_DIR / "voices"
     available_voices = []
     
     # 1. Native Voices
-    if voices_dir.exists():
-        for file in voices_dir.iterdir():
-            if file.suffix.lower() in [".wav", ".mp3", ".ogg"]:
-                available_voices.append({
-                    "voice_id": file.stem.lower(),
-                    "name": file.stem.capitalize(),
-                    "preview_url": None,
-                    "provider": "chatterbox",
-                    "type": "native"
-                })
+    for voice_file in list_voice_files():
+        available_voices.append({
+            "voice_id": voice_file,
+            "name": voice_file.capitalize(),
+            "preview_url": None,
+            "provider": "chatterbox",
+            "type": "native"
+        })
     
     # 2. Virtual Voices (Presets)
     for preset_id, preset_data in presets.items():
@@ -305,16 +423,127 @@ async def list_voices():
 async def get_capabilities():
     """Returns available voice files, mannerism profiles, and TTS modes."""
     load_config()
-    voices_dir = BASE_DIR / "voices"
-    voice_files = []
-    if voices_dir.exists():
-        voice_files = [f.stem.lower() for f in voices_dir.iterdir() if f.suffix.lower() in [".wav", ".mp3", ".ogg"]]
-    
+
     return {
-        "voices": voice_files,
+        "voices": list_voice_files(),
         "profiles": list(profiles.keys()),
         "modes": ["full", "turbo"]
     }
+
+@app.get("/chatterbox/presets")
+async def get_presets():
+    load_config()
+    return {
+        "presets": [
+            {"id": preset_id, **preset_data}
+            for preset_id, preset_data in presets.items()
+        ]
+    }
+
+@app.post("/chatterbox/presets")
+async def create_preset(payload: PresetPayload):
+    load_config()
+    preset_id = ensure_non_empty_id(payload.id, "Preset")
+    if preset_id in presets:
+        raise HTTPException(status_code=409, detail=f"Preset '{preset_id}' already exists")
+
+    presets[preset_id] = normalize_preset(payload)
+    persist_presets()
+    return {"preset": {"id": preset_id, **presets[preset_id]}}
+
+@app.put("/chatterbox/presets/{preset_id}")
+async def update_preset(preset_id: str, payload: PresetPayload):
+    load_config()
+    preset_id = ensure_non_empty_id(preset_id, "Preset")
+    body_id = ensure_non_empty_id(payload.id, "Preset")
+    if preset_id not in presets:
+        raise HTTPException(status_code=404, detail=f"Preset '{preset_id}' not found")
+
+    next_data = normalize_preset(payload)
+    if body_id != preset_id:
+        if body_id in presets:
+            raise HTTPException(status_code=409, detail=f"Preset '{body_id}' already exists")
+        del presets[preset_id]
+        preset_id = body_id
+
+    presets[preset_id] = next_data
+    persist_presets()
+    return {"preset": {"id": preset_id, **presets[preset_id]}}
+
+@app.delete("/chatterbox/presets/{preset_id}")
+async def delete_preset(preset_id: str):
+    load_config()
+    preset_id = ensure_non_empty_id(preset_id, "Preset")
+    if preset_id not in presets:
+        raise HTTPException(status_code=404, detail=f"Preset '{preset_id}' not found")
+
+    deleted = presets.pop(preset_id)
+    persist_presets()
+    return {"deleted": {"id": preset_id, **deleted}}
+
+@app.get("/chatterbox/profiles")
+async def get_profiles():
+    load_config()
+    return {
+        "profiles": [
+            {"id": profile_id, **profile_data}
+            for profile_id, profile_data in profiles.items()
+        ]
+    }
+
+@app.post("/chatterbox/profiles")
+async def create_profile(payload: ProfilePayload):
+    load_config()
+    profile_id = ensure_non_empty_id(payload.id, "Profile")
+    if profile_id in profiles:
+        raise HTTPException(status_code=409, detail=f"Profile '{profile_id}' already exists")
+
+    profiles[profile_id] = normalize_profile(payload)
+    persist_profiles()
+    return {"profile": {"id": profile_id, **profiles[profile_id]}}
+
+@app.put("/chatterbox/profiles/{profile_id}")
+async def update_profile(profile_id: str, payload: ProfilePayload):
+    load_config()
+    profile_id = ensure_non_empty_id(profile_id, "Profile")
+    body_id = ensure_non_empty_id(payload.id, "Profile")
+    if profile_id not in profiles:
+        raise HTTPException(status_code=404, detail=f"Profile '{profile_id}' not found")
+
+    next_data = normalize_profile(payload)
+    if body_id != profile_id:
+        dependent_presets = presets_using_profile(profile_id)
+        if dependent_presets:
+            raise HTTPException(
+                status_code=409,
+                detail=f"Profile '{profile_id}' is used by presets: {', '.join(dependent_presets)}"
+            )
+        if body_id in profiles:
+            raise HTTPException(status_code=409, detail=f"Profile '{body_id}' already exists")
+        del profiles[profile_id]
+        profile_id = body_id
+
+    profiles[profile_id] = next_data
+    persist_profiles()
+    return {"profile": {"id": profile_id, **profiles[profile_id]}}
+
+@app.delete("/chatterbox/profiles/{profile_id}")
+async def delete_profile(profile_id: str):
+    load_config()
+    profile_id = ensure_non_empty_id(profile_id, "Profile")
+    if profile_id not in profiles:
+        raise HTTPException(status_code=404, detail=f"Profile '{profile_id}' not found")
+
+    dependent_presets = presets_using_profile(profile_id)
+    if dependent_presets:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Profile '{profile_id}' is used by presets: {', '.join(dependent_presets)}"
+        )
+
+    deleted = profiles.pop(profile_id)
+    persist_profiles()
+    return {"deleted": {"id": profile_id, **deleted}}
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=args.port)
