@@ -50,6 +50,10 @@ LAST_PRESETS_MTIME = 0
 LAST_SUPPORTED_TAGS_MTIME = 0
 
 VOICE_FILE_EXTENSIONS = [".wav", ".mp3", ".ogg"]
+TURBO_EVENT_TAGS = {
+    "[clear throat]", "[sigh]", "[shush]", "[cough]", "[groan]",
+    "[sniff]", "[gasp]", "[chuckle]", "[laugh]",
+}
 
 def load_config():
     global profiles, presets, supported_tags, LAST_PROFILES_MTIME, LAST_PRESETS_MTIME, LAST_SUPPORTED_TAGS_MTIME
@@ -135,7 +139,14 @@ print(f"Active Mannerisms: {ACTIVE_PROFILE_NAME}")
 # Emoji regex: Strips pictographic emoji but preserves digits 0-9.
 EMOJI_REGEX = re.compile(r"(?!\d)[\U0001F000-\U0001F9FF\U00002600-\U000026FF\U00002700-\U000027BF]\uFE0F?", re.UNICODE)
 
-def preprocess_text(text: str, profile_name: str) -> str:
+def strip_unsupported_turbo_tags(text: str) -> str:
+    def replace_tag(match: re.Match[str]) -> str:
+        tag = match.group(0).strip().lower()
+        return match.group(0) if tag in TURBO_EVENT_TAGS else " "
+
+    return re.sub(r"\[[^\]]+\]", replace_tag, text)
+
+def preprocess_text(text: str, profile_name: str, mode: str) -> str:
     profile = profiles.get(profile_name, {})
     if not profile:
         return text
@@ -165,14 +176,19 @@ def preprocess_text(text: str, profile_name: str) -> str:
             text = text.replace("~", f" {filler} ", 1)
 
     # 5. Narrative (*text*) and Mutters ((text)) -> [whisper] (prefix only)
-    text = re.sub(r"\*([^*]+)\*", r" [whisper] \1 ", text)
-    text = re.sub(r"(\([^)]+\)|\[[^\]]+\])", r" [whisper] \1 ", text)
+    if mode == "full":
+        text = re.sub(r"\*([^*]+)\*", r" [whisper] \1 ", text)
+        text = re.sub(r"(\([^)]+\)|\[[^\]]+\])", r" [whisper] \1 ", text)
 
     # 6. Dramatic Ellipsis -> [sigh]
     text = text.replace("...", " [sigh] ")
 
     # 7. Strip Emojis (similar to aws-polly)
     text = EMOJI_REGEX.sub(" ", text)
+
+    # 8. Turbo only supports a narrow bracket-tag subset.
+    if mode == "turbo":
+        text = strip_unsupported_turbo_tags(text)
 
     # Final cleanup of multiple spaces
     text = re.sub(r"\s+", " ", text).strip()
@@ -387,7 +403,8 @@ async def speech(request: SpeechRequest):
                 target_exaggeration = preset.get("exaggeration", target_exaggeration)
 
             # 2. Pre-process text based on resolved profile
-            processed_input = preprocess_text(request.input, target_profile)
+            active_mode = "turbo" if args.turbo else "full"
+            processed_input = preprocess_text(request.input, target_profile, active_mode)
             
             # 3. Resolve voice path (dynamic with Ivy fallback)
             voice_path = resolve_voice_path(target_voice)
