@@ -5,5 +5,7 @@ __pycache__/
 *.ogg
 *.mp3
 *.wav
-!voices/ivy.mp3
+!voices/*.mp3
+!voices/*.wav
+!voices/*.ogg
 benchmark_report.txt
