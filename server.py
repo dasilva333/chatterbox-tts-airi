@@ -42,18 +42,16 @@ PROFILES_PATH = BASE_DIR / "profiles.json"
 PRESETS_PATH = BASE_DIR / "presets.json"
 SUPPORTED_TAGS_PATH = BASE_DIR / "supported_tags.csv"
 
+# Constants
+VOICE_FILE_EXTENSIONS = [".wav", ".mp3", ".ogg"]
+
 profiles = {}
 presets = {}
 supported_tags = []
+effective_turbo_tags = set()
 LAST_PROFILES_MTIME = 0
 LAST_PRESETS_MTIME = 0
 LAST_SUPPORTED_TAGS_MTIME = 0
-
-VOICE_FILE_EXTENSIONS = [".wav", ".mp3", ".ogg"]
-TURBO_EVENT_TAGS = {
-    "[clear throat]", "[sigh]", "[shush]", "[cough]", "[groan]",
-    "[sniff]", "[gasp]", "[chuckle]", "[laugh]",
-}
 
 def load_config():
     global profiles, presets, supported_tags, LAST_PROFILES_MTIME, LAST_PRESETS_MTIME, LAST_SUPPORTED_TAGS_MTIME
@@ -88,22 +86,42 @@ def load_config():
         if mtime > LAST_SUPPORTED_TAGS_MTIME:
             try:
                 loaded_tags = []
+                turbo_tags = set()
+                is_turbo_mode = getattr(args, 'turbo', False)
+
                 with open(SUPPORTED_TAGS_PATH, "r", encoding="utf-8", newline="") as f:
                     reader = csv.DictReader(f)
                     for row in reader:
                         category = str(row.get("category", "")).strip()
                         tag = str(row.get("tag", "")).strip()
                         description = str(row.get("description", "")).strip()
+                        tag_type = str(row.get("type", "both")).strip().lower()
+
                         if not category or not tag:
                             continue
-                        loaded_tags.append({
-                            "category": category,
-                            "tag": tag,
-                            "description": description,
-                        })
+
+                        # Mode-aware filtering:
+                        # 1. If we are in turbo mode, only keep 'turbo' or 'both' tags.
+                        # 2. If we are in full mode, keep 'full' or 'both' tags.
+                        
+                        can_use_in_turbo = tag_type in ["turbo", "both"]
+                        can_use_in_full = tag_type in ["full", "both"]
+
+                        if can_use_in_turbo:
+                            turbo_tags.add(f"[{tag.replace('_', ' ')}]")
+
+                        if (is_turbo_mode and can_use_in_turbo) or (not is_turbo_mode and can_use_in_full):
+                            loaded_tags.append({
+                                "category": category,
+                                "tag": tag,
+                                "description": description,
+                            })
+
                 supported_tags = loaded_tags
+                global effective_turbo_tags
+                effective_turbo_tags = turbo_tags
                 LAST_SUPPORTED_TAGS_MTIME = mtime
-                print(f"Reloaded supported_tags.csv (updated {time.ctime(mtime)})")
+                print(f"Reloaded supported_tags.csv ({len(supported_tags)} tags loaded for {'turbo' if is_turbo_mode else 'full'} mode)")
             except Exception as e:
                 print(f"Error loading supported_tags.csv: {e}")
 
@@ -142,7 +160,7 @@ EMOJI_REGEX = re.compile(r"(?!\d)[\U0001F000-\U0001F9FF\U00002600-\U000026FF\U00
 def strip_unsupported_turbo_tags(text: str) -> str:
     def replace_tag(match: re.Match[str]) -> str:
         tag = match.group(0).strip().lower()
-        return match.group(0) if tag in TURBO_EVENT_TAGS else " "
+        return match.group(0) if tag in effective_turbo_tags else " "
 
     return re.sub(r"\[[^\]]+\]", replace_tag, text)
 
