@@ -18,6 +18,7 @@ import argparse
 import csv
 from pathlib import Path
 import time
+import tempfile
 
 app = FastAPI(title="Chatterbox OpenAI Compatible Server")
 
@@ -231,15 +232,11 @@ print("Model loaded successfully.")
 # Global lock for sequential processing
 synth_lock = asyncio.Lock()
 
-# Hardcode Ivy voice path and prime the model
-IVY_VOICE_PATH = str(BASE_DIR / "voices" / "ivy.mp3")
-print(f"Pre-sampling/Priming default voice: {IVY_VOICE_PATH}")
-# This calculates the embeddings and keeps them in model.conds
-model.prepare_conditionals(IVY_VOICE_PATH)
-print("Priming complete. Model is warm.")
+# Durable directory for session-padded voices
+PADDED_DIR = BASE_DIR / "padded_voices"
+PADDED_DIR.mkdir(exist_ok=True)
 
-# Cache for primed voices to avoid redundant prepare_conditionals calls
-PRIMED_VOICES = { "ivy": IVY_VOICE_PATH }
+# Voice related utility functions
 
 def resolve_voice_path(requested_voice: str) -> str:
     """Find voice in voices/ folder or fallback to ivy."""
@@ -247,7 +244,7 @@ def resolve_voice_path(requested_voice: str) -> str:
     requested_voice = requested_voice.lower().strip()
     
     # Check common extensions
-    for ext in [".wav", ".mp3", ".ogg"]:
+    for ext in VOICE_FILE_EXTENSIONS:
         path = voices_dir / f"{requested_voice}{ext}"
         if path.exists():
             return str(path)
@@ -260,12 +257,45 @@ def list_voice_files() -> List[str]:
     voices_dir = BASE_DIR / "voices"
     if not voices_dir.exists():
         return []
+    
+    voices = set()
+    for ext in VOICE_FILE_EXTENSIONS:
+        for f in voices_dir.glob(f"*{ext}"):
+            voices.add(f.stem.lower())
+    return sorted(list(voices))
 
-    return sorted([
-        file.stem.lower()
-        for file in voices_dir.iterdir()
-        if file.suffix.lower() in VOICE_FILE_EXTENSIONS
-    ])
+def prepare_voice_conditional(voice_path: str) -> str:
+    """Ensure voice clone sample is long enough for the model and prime it."""
+    # Check duration
+    data, samplerate = sf.read(voice_path)
+    duration = len(data) / samplerate
+    
+    if args.turbo and duration < 5.0:
+        print(f"Warning: voice clone sample '{voice_path}' is too short ({duration:.2f}s) for Turbo. Padding to 6s.")
+        # Repeat until > 6s
+        repeats = int(6.0 / duration) + 1
+        padded_data = np.tile(data, (repeats,) if data.ndim == 1 else (repeats, 1))
+        
+        # Save to durable session file (model needs this path for generate() too)
+        padded_path = PADDED_DIR / f"{Path(voice_path).stem}_padded.wav"
+        sf.write(str(padded_path), padded_data, samplerate)
+        
+        model.prepare_conditionals(str(padded_path))
+        return str(padded_path)
+    else:
+        model.prepare_conditionals(voice_path)
+        return voice_path
+
+# Hardcode Ivy voice path and prime the model
+IVY_VOICE_PATH = str(BASE_DIR / "voices" / "ivy.mp3")
+print(f"Pre-sampling/Priming default voice: {IVY_VOICE_PATH}")
+# This calculates the embeddings and keeps them in model.conds
+IVY_EFFECTIVE_PATH = prepare_voice_conditional(IVY_VOICE_PATH)
+print("Priming complete. Model is warm.")
+
+# Cache for primed voices to avoid redundant prepare_conditionals calls
+# Stores mapping: voice_name -> effective_path (original or padded/session)
+PRIMED_VOICES = { "ivy": IVY_EFFECTIVE_PATH }
 
 class EmoticonRule(BaseModel):
     pattern: str
@@ -408,7 +438,12 @@ async def speech(request: SpeechRequest):
     start_time = time.time()
     async with synth_lock:
         try:
-            # 1. Preset Resolution Logic
+            # 1. Skip if original input has no alphanumeric characters (aggressive skip)
+            if not re.search(r'[a-zA-Z0-9]', request.input):
+                print(f"Skipping non-usable original input: '{request.input}'")
+                return Response(status_code=204)
+
+            # 2. Preset Resolution Logic
             target_voice = request.voice
             target_profile = ACTIVE_PROFILE_NAME
             target_exaggeration = request.exaggeration
@@ -420,11 +455,16 @@ async def speech(request: SpeechRequest):
                 target_profile = preset.get("mannerism_profile", target_profile)
                 target_exaggeration = preset.get("exaggeration", target_exaggeration)
 
-            # 2. Pre-process text based on resolved profile
+            # 3. Pre-process text based on resolved profile
             active_mode = "turbo" if args.turbo else "full"
             processed_input = preprocess_text(request.input, target_profile, active_mode)
             
-            # 3. Resolve voice path (dynamic with Ivy fallback)
+            # 4. Skip if processed input has no alphanumeric characters remains (non-usable)
+            if not re.search(r'[a-zA-Z0-9]', processed_input):
+                print(f"Skipping non-usable processed input: '{processed_input}' (from '{request.input}')")
+                return Response(status_code=204)
+
+            # 5. Resolve voice path (dynamic with Ivy fallback)
             voice_path = resolve_voice_path(target_voice)
             
             print(f"--- Synthesis Request ---")
@@ -438,20 +478,21 @@ async def speech(request: SpeechRequest):
             voice_name = Path(voice_path).stem.lower()
             if voice_name not in PRIMED_VOICES:
                 print(f"Priming new voice on the fly: {voice_name}")
-                model.prepare_conditionals(voice_path)
-                PRIMED_VOICES[voice_name] = voice_path
+                effective_path = prepare_voice_conditional(voice_path)
+                PRIMED_VOICES[voice_name] = effective_path
+            
+            # Use the primed/effective path for synthesis
+            synthesis_voice_path = PRIMED_VOICES[voice_name]
 
-            # Generate audio
             if args.turbo:
-                # Turbo model generate doesn't take exaggeration
                 wav_tensor = model.generate(
                     processed_input, 
-                    audio_prompt_path=voice_path
+                    audio_prompt_path=synthesis_voice_path # Lib expects this arg name
                 )
             else:
                 wav_tensor = model.generate(
                     processed_input, 
-                    audio_prompt_path=voice_path, 
+                    audio_prompt_path=synthesis_voice_path, 
                     exaggeration=target_exaggeration
                 )
             

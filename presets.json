@@ -59,5 +59,27 @@
     "mannerism_profile": "catgirl",
     "ui_expressions": [],
     "ui_mannerisms": []
+  },
+  "mint": {
+    "voice_file": "siera_super_cutie",
+    "tts_model": "turbo",
+    "exaggeration": 0.0,
+    "mannerism_profile": "bunnygirl",
+    "ui_expressions": [
+      "[laughter]",
+      "[sigh]",
+      "[gasp]",
+      "[groan]",
+      "[cough]",
+      "[clear_throat]",
+      "[sniff]",
+      "[shhh]",
+      "[chuckle]"
+    ],
+    "ui_mannerisms": [
+      "tilde",
+      "eyes",
+      "hmph"
+    ]
   }
 }

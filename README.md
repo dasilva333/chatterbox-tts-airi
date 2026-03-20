@@ -4,16 +4,25 @@ Chatterbox is a high-performance, OpenAI-compatible Text-to-Speech (TTS) server 
 
 ## Features
 - **OpenAI Compatible**: Seamlessly integrates with any OpenAI-compatible TTS client.
-- **Voice Cloning**: Clone any voice by simply placing a 6-second `.wav` or `.mp3` clip in the `voices/` directory.
-- **Presets (Virtual Voices)**: Create complex voice configurations that bind a base voice to a mannerism profile and specific model parameters.
-- **AIRI Management Studio**: AIRI can manage presets and profiles directly through the Chatterbox provider page instead of hand-editing JSON files.
-- **Hot-Reloading**: Automatically detects changes to `profiles.json` and `presets.json` and reloads them on the fly without a server restart.
-- **Mannerisms**: Customize character-specific mannerisms, fillers (e.g., `~` mappings), and text replacements via `profiles.json`.
-- **Emotion Tags**: Trigger specific sounds like `[laughter]`, `[sigh]`, or `[whisper]` using square bracket tags.
-- **Optimized for AIRI**: Specially designed to handle AIRI's parallel request pattern by converting them into a high-performance sequential queue, protecting GPU resources while maintaining low-latency responses.
-- **Model Priming**: Features automatic model priming for near-instant synthesis during active sessions.
-- **Turbo Mode**: Supports the high-speed `ChatterboxTurboTTS` for near-real-time synthesis.
-- **OGG Opus Support**: Natively streams high-quality, low-bandwidth OGG Opus audio.
+- **Voice Cloning**: Clone any voice by simply placing a clip (6s recommended) in the `voices/` directory.
+- **Auto-Padding**: Automatically lengthens voice clone samples shorter than 5 seconds to satisfy Turbo model requirements.
+- **Presets (Virtual Voices)**: Create complex configurations binding a base voice to a mannerism profile and parameters.
+- **AIRI Management Studio**: Manage presets and profiles directly through the integrated UI.
+- **Hot-Reloading**: Automatically detects changes to `profiles.json` and `presets.json` on the fly.
+- **Mannerisms**: Customize character-specific fillers (e.g., `~`), emoticons, and tilde mappings.
+- **Emotion Tags**: Trigger specific sounds like `[laughter]`, `[sigh]`, or `[whisper]`.
+- **Turbo Mode**: Supports high-speed `ChatterboxTurboTTS` for near-real-time synthesis.
+- **OGG Opus Support**: Natively streams high-quality, low-bandwidth audio.
+- **Python 3.11 Target**: Optimized and tested specifically for Python 3.11 to avoid dependency conflicts (e.g., `numpy<2`).
+
+---
+
+## 🐍 Supported Python Version
+
+> [!IMPORTANT]
+> **Python 3.11 is the officially supported version for Chatterbox.**
+>
+> Using Python 3.12 or 3.14 will cause installation failures (specifically with `numpy` and legacy build tools like `imp`). If you have multiple versions installed, the `install.bat` will attempt to select `py -3.11` automatically.
 
 ---
 
@@ -76,8 +85,9 @@ install.bat
 
 ### 🔧 Manual Installation
 1. **Prepare Environment**:
+   It is highly recommended to use the `py` launcher (Windows) to target the correct version:
    ```bash
-   py -m venv venv
+   py -3.11 -m venv venv
    .\venv\Scripts\activate
    ```
 
@@ -219,6 +229,7 @@ The server monitors the modification timestamps of `profiles.json` and `presets.
 - **`benchmark.py`**: Script used for gathering generation timings.
 - **`supported_tags.md`**: Reference list of verified sound/emotion tokens.
 - **`voices/`**: Directory for voice cloning source files.
+- **`padded_voices/`**: Directory for lengthened voice clone samples (Auto-Padding).
 
 ---
 

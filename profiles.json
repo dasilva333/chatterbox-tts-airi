@@ -129,5 +129,24 @@
       }
     ],
     "hmph": "[sigh]"
+  },
+  "mint": {
+    "tilde": [
+      "[sigh]",
+      "[chuckle]",
+      "hm...",
+      "ah..."
+    ],
+    "emoticons": [
+      {
+        "pattern": "\\b0_0\\b",
+        "replacement": "[gasp]"
+      },
+      {
+        "pattern": "\\b[oO]_[oO]\\b",
+        "replacement": "[gasp]"
+      }
+    ],
+    "hmph": "hm..."
   }
 }

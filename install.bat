@@ -6,8 +6,12 @@ echo [Chatterbox] Starting Installation Sequence...
 
 :: 1. Create venv if it doesn't exist
 if not exist "venv" (
-    echo [Chatterbox] Creating virtual environment...
-    py -m venv venv
+    echo [Chatterbox] Creating virtual environment (Python 3.11 recommended)...
+    py -3.11 -m venv venv
+    if errorlevel 1 (
+        echo [Warning] py -3.11 failed. Attempting default 'py -m venv'...
+        py -m venv venv
+    )
 )
 
 :: 2. Upgrade pip
