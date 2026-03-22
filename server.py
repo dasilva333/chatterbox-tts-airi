@@ -195,9 +195,18 @@ def preprocess_text(text: str, profile_name: str, mode: str) -> str:
             text = text.replace("~", f" {filler} ", 1)
 
     # 5. Narrative (*text*) and Mutters ((text)) -> [whisper] (prefix only)
+    # Normalize multi-asterisks (e.g. **bold**) down to single (*narrative*)
+    text = re.sub(r"\*\*+", "*", text)
+
     if mode == "full":
+        # 1. Handle asterisks (*text*)
         text = re.sub(r"\*([^*]+)\*", r" [whisper] \1 ", text)
-        text = re.sub(r"(\([^)]+\)|\[[^\]]+\])", r" [whisper] \1 ", text)
+        # 2. Handle parens ((text)) and brackets [text]
+        # We use a negative lookahead to avoid re-whispering the [whisper] tag we just added
+        text = re.sub(r"(\([^)]+\)|(?<!\[whisper\]\s)\[(?!whisper\s?)[^\]]+\])", r" [whisper] \1 ", text)
+    else:
+        # In turbo mode, if narrative isn't supported, we strip them to avoid "breaking"
+        text = text.replace("*", " ")
 
     # 6. Dramatic Ellipsis -> [sigh]
     text = text.replace("...", " [sigh] ")
