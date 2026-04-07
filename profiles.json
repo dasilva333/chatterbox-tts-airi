@@ -1,6 +1,5 @@
 {
   "catgirl": {
-    "hmph": "hahmf",
     "tilde": [
       "nyan",
       "meow",
@@ -10,17 +9,14 @@
     "emoticons": [
       {
         "pattern": "\\b0_0\\b",
-        "replacement": " [meow] "
+        "replacement": "[meow]"
       },
       {
         "pattern": "\\b[oO]_[oO]\\b",
-        "replacement": " [mew]? "
+        "replacement": "[mew]?"
       }
     ],
-    "narrative": {
-      "rate": "x-slow",
-      "volume": "soft"
-    }
+    "hmph": "hahmf"
   },
   "bunnygirl": {
     "hmph": "humff",

@@ -34,6 +34,8 @@ app.add_middleware(
 parser = argparse.ArgumentParser(description="Chatterbox TTS Server")
 parser.add_argument("--mannerisms", default="catgirl", help="Starting mannerisms from profiles.json (default: catgirl)")
 parser.add_argument("--turbo", action="store_true", help="Use the high-speed Turbo model")
+parser.add_argument("--omni", action="store_true", help="Use the OmniVoice inference engine")
+parser.add_argument("--full", action="store_true", help="Use the high-quality full model (deprecated as default)")
 parser.add_argument("--port", type=int, default=8090, help="Port to run the server on")
 args, unknown = parser.parse_known_args()
 
@@ -107,11 +109,13 @@ def load_config():
                         
                         can_use_in_turbo = tag_type in ["turbo", "both"]
                         can_use_in_full = tag_type in ["full", "both"]
+                        can_use_in_omni = tag_type in ["omni", "both"]
 
                         if can_use_in_turbo:
                             turbo_tags.add(f"[{tag.replace('_', ' ')}]")
 
-                        if (is_turbo_mode and can_use_in_turbo) or (not is_turbo_mode and can_use_in_full):
+                        is_omni_mode = getattr(args, 'omni', False) or (not getattr(args, 'turbo', False) and not getattr(args, 'full', False))
+                        if (is_omni_mode and can_use_in_omni) or (not is_omni_mode and not getattr(args, 'turbo', False) and can_use_in_full) or (not is_omni_mode and getattr(args, 'turbo', False) and can_use_in_turbo):
                             loaded_tags.append({
                                 "category": category,
                                 "tag": tag,
@@ -232,10 +236,19 @@ if args.turbo:
     from chatterbox.tts_turbo import ChatterboxTurboTTS
     print(f"Loading Chatterbox Turbo model on {DEVICE}...")
     model = ChatterboxTurboTTS.from_pretrained(DEVICE)
-else:
+elif getattr(args, 'full', False):
     from chatterbox import ChatterboxTTS
-    print(f"Loading Chatterbox model on {DEVICE}...")
+    print(f"Loading Chatterbox model (Full) on {DEVICE}...")
     model = ChatterboxTTS.from_pretrained(DEVICE)
+else:
+    # Default to Omni
+    from omnivoice import OmniVoice
+    print(f"Loading OmniVoice model (Default) on {DEVICE}...")
+    model = OmniVoice.from_pretrained(
+        "k2-fsa/OmniVoice",
+        device_map=DEVICE,
+        dtype=torch.float16 if DEVICE == "cuda" else torch.float32
+    )
 print("Model loaded successfully.")
 
 # Global lock for sequential processing
@@ -279,6 +292,8 @@ def prepare_voice_conditional(voice_path: str) -> str:
     data, samplerate = sf.read(voice_path)
     duration = len(data) / samplerate
     
+    is_omni_mode = getattr(args, 'omni', False) or (not getattr(args, 'turbo', False) and not getattr(args, 'full', False))
+
     if args.turbo and duration < 5.0:
         print(f"Warning: voice clone sample '{voice_path}' is too short ({duration:.2f}s) for Turbo. Padding to 6s.")
         # Repeat until > 6s
@@ -289,10 +304,12 @@ def prepare_voice_conditional(voice_path: str) -> str:
         padded_path = PADDED_DIR / f"{Path(voice_path).stem}_padded.wav"
         sf.write(str(padded_path), padded_data, samplerate)
         
-        model.prepare_conditionals(str(padded_path))
+        if not is_omni_mode:
+            model.prepare_conditionals(str(padded_path))
         return str(padded_path)
     else:
-        model.prepare_conditionals(voice_path)
+        if not is_omni_mode:
+            model.prepare_conditionals(voice_path)
         return voice_path
 
 # Hardcode Ivy voice path and prime the model
@@ -465,7 +482,12 @@ async def speech(request: SpeechRequest):
                 target_exaggeration = preset.get("exaggeration", target_exaggeration)
 
             # 3. Pre-process text based on resolved profile
-            active_mode = "turbo" if args.turbo else "full"
+            if getattr(args, 'turbo', False):
+                active_mode = "turbo"
+            elif getattr(args, 'full', False):
+                active_mode = "full"
+            else:
+                active_mode = "omni" # Default
             processed_input = preprocess_text(request.input, target_profile, active_mode)
             
             # 4. Skip if processed input has no alphanumeric characters remains (non-usable)
@@ -493,33 +515,43 @@ async def speech(request: SpeechRequest):
             # Use the primed/effective path for synthesis
             synthesis_voice_path = PRIMED_VOICES[voice_name]
 
-            if args.turbo:
+            if getattr(args, 'turbo', False):
                 wav_tensor = model.generate(
                     processed_input, 
                     audio_prompt_path=synthesis_voice_path # Lib expects this arg name
                 )
-            else:
+            elif getattr(args, 'full', False):
                 wav_tensor = model.generate(
                     processed_input, 
                     audio_prompt_path=synthesis_voice_path, 
                     exaggeration=target_exaggeration
                 )
+            else:
+                # Default to Omni
+                wav_tensor_list = model.generate(
+                    processed_input, 
+                    ref_audio=synthesis_voice_path
+                )
+                wav_tensor = wav_tensor_list[0]
             
             # Convert to numpy
             wav_data = wav_tensor.squeeze(0).cpu().numpy()
+            
+            # Determine sample rate
+            synthesis_sr = getattr(model, 'sr', 24000)
             
             buffer = io.BytesIO()
             if request.response_format in ["opus", "ogg", "mp3"]:
                 # mp3 requested (or opus/ogg), try Opus encoding via soundfile
                 try:
-                    sf.write(buffer, wav_data, model.sr, format='OGG', subtype='OPUS')
+                    sf.write(buffer, wav_data, synthesis_sr, format='OGG', subtype='OPUS')
                     media_type = "audio/ogg"
                 except Exception as e:
                     print(f"Failed to encode as Opus, falling back to Vorbis: {e}")
-                    sf.write(buffer, wav_data, model.sr, format='OGG', subtype='VORBIS')
+                    sf.write(buffer, wav_data, synthesis_sr, format='OGG', subtype='VORBIS')
                     media_type = "audio/ogg"
             else:
-                sf.write(buffer, wav_data, model.sr, format='WAV')
+                sf.write(buffer, wav_data, synthesis_sr, format='WAV')
                 media_type = "audio/wav"
                 
             latency = time.time() - start_time

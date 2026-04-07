@@ -81,5 +81,21 @@
       "eyes",
       "hmph"
     ]
+  },
+  "preset_neurosama": {
+    "voice_file": "neurosama",
+    "tts_model": "full",
+    "exaggeration": 0.95,
+    "mannerism_profile": "catgirl",
+    "ui_expressions": [],
+    "ui_mannerisms": []
+  },
+  "preset_gladdos": {
+    "voice_file": "gladdos_evenlistening",
+    "tts_model": "full",
+    "exaggeration": 0.2,
+    "mannerism_profile": "wired_goddess",
+    "ui_expressions": [],
+    "ui_mannerisms": []
   }
 }

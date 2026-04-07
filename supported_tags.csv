@@ -28,3 +28,61 @@ sound,whistle,Audible whistle,full
 sound,exhale,Audible release of breath,full
 sound,inhale,Audible intake of breath,full
 sound,gibberish,Nonsense vocalization,full
+emotion,laughter,OmniVoice: Spoken laughter,omni
+emotion,chuckle,OmniVoice: Quiet laughter,omni
+emotion,giggle,OmniVoice: Light playful laughter,omni
+emotion,sigh,OmniVoice: Soft reflective release,omni
+emotion,gasp,OmniVoice: Sharp intake,omni
+emotion,cry,OmniVoice: Crying sounds,omni
+emotion,sob,OmniVoice: Sobbing sounds,omni
+emotion,yawn,OmniVoice: Audible yawn,omni
+emotion,cough,OmniVoice: Audible cough,omni
+emotion,clear-throat,OmniVoice: Throat clearing,omni
+emotion,breath,OmniVoice: Audible breath,omni
+emotion,inhale,OmniVoice: Audible intake,omni
+emotion,exhale,OmniVoice: Audible release,omni
+emotion,sniffle,OmniVoice: Audible sniffle,omni
+emotion,surprise-oh,OmniVoice: Surprised - oh,omni
+emotion,surprise-ah,OmniVoice: Surprised - ah,omni
+emotion,surprise-gasp,OmniVoice: Sharp intake from surprise,omni
+emotion,surprise-wow,OmniVoice: Surprised - wow,omni
+emotion,agreement-mm,OmniVoice: Confirmatory mm,omni
+emotion,agreement-uh-huh,OmniVoice: Agreement - uh-huh,omni
+emotion,agreement-yeah,OmniVoice: Agreement - yeah,omni
+emotion,disagreement-mm-mm,OmniVoice: Disagreement - mm-mm,omni
+emotion,disagreement-nuh-uh,OmniVoice: Disagreement - nuh-uh,omni
+emotion,thought-hmm,OmniVoice: Thinking - hmm,omni
+emotion,thought-um,OmniVoice: Thinking - um,omni
+emotion,thought-uh,OmniVoice: Thinking - uh,omni
+emotion,dissatisfaction-hnn,OmniVoice: Dissatisfaction - hnn,omni
+emotion,dissatisfaction-ugh,OmniVoice: Dissatisfaction - ugh,omni
+emotion,dissatisfaction-tsk,OmniVoice: Dissatisfaction - tsk,omni
+emotion,realization-ah,OmniVoice: Realization - ah,omni
+emotion,realization-oh,OmniVoice: Realization - oh,omni
+emotion,relief-sigh,OmniVoice: Relieved sigh,omni
+emotion,relief-phew,OmniVoice: Relief - phew,omni
+emotion,amusement-chuckle,OmniVoice: Amused chuckle,omni
+emotion,amusement-snort,OmniVoice: Amused snort,omni
+emotion,happiness-yay,OmniVoice: Happy - yay,omni
+emotion,happiness-sigh,OmniVoice: Happy sigh,omni
+emotion,sadness-sigh,OmniVoice: Sad sigh,omni
+emotion,sadness-aw,OmniVoice: Sadness - aw,omni
+emotion,frustration-ugh,OmniVoice: Frustration - ugh,omni
+emotion,frustration-argh,OmniVoice: Frustration - argh,omni
+emotion,frustration-sigh,OmniVoice: Frustration sigh,omni
+emotion,anger-scoff,OmniVoice: Angry scoff,omni
+emotion,anger-grr,OmniVoice: Angry grr,omni
+emotion,disgust-ew,OmniVoice: Disgusted ew,omni
+emotion,disgust-ugh,OmniVoice: Disgusted ugh,omni
+emotion,nervous-laugh,OmniVoice: Nervous laugh,omni
+emotion,nervous-um,OmniVoice: Nervous um,omni
+emotion,pain-ouch,OmniVoice: Pain - ouch,omni
+emotion,pain-ah,OmniVoice: Pain - ah,omni
+emotion,confirmation-en,OmniVoice: Confirmation,omni
+emotion,question-en,OmniVoice: Question en,omni
+emotion,question-ah,OmniVoice: Question ah,omni
+emotion,question-oh,OmniVoice: Question oh,omni
+emotion,question-ei,OmniVoice: Question ei,omni
+emotion,question-yi,OmniVoice: Question yi,omni
+emotion,surprise-wa,OmniVoice: Surprised wa,omni
+emotion,surprise-yo,OmniVoice: Surprised yo,omni
