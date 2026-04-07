@@ -198,16 +198,20 @@ def preprocess_text(text: str, profile_name: str, mode: str) -> str:
             filler = random.choice(tilde_fillers)
             text = text.replace("~", f" {filler} ", 1)
 
-    # 5. Narrative (*text*) and Mutters ((text)) -> [whisper] (prefix only)
+    # 5. Narrative (*text*) and Mutters ((text))
     # Normalize multi-asterisks (e.g. **bold**) down to single (*narrative*)
     text = re.sub(r"\*\*+", "*", text)
 
     if mode == "full":
-        # 1. Handle asterisks (*text*)
+        # Handle asterisks (*text*)
         text = re.sub(r"\*([^*]+)\*", r" [whisper] \1 ", text)
-        # 2. Handle parens ((text)) and brackets [text]
+        # Handle parens ((text)) and brackets [text]
         # We use a negative lookahead to avoid re-whispering the [whisper] tag we just added
         text = re.sub(r"(\([^)]+\)|(?<!\[whisper\]\s)\[(?!whisper\s?)[^\]]+\])", r" [whisper] \1 ", text)
+    elif mode == "omni":
+        # In Omni mode, we strip asterisks to avoid the model trying to read them.
+        # We don't map to [whisper] because OmniVoice doesn't natively have that specialty token.
+        text = text.replace("*", " ")
     else:
         # In turbo mode, if narrative isn't supported, we strip them to avoid "breaking"
         text = text.replace("*", " ")
@@ -218,7 +222,21 @@ def preprocess_text(text: str, profile_name: str, mode: str) -> str:
     # 7. Strip Emojis (similar to aws-polly)
     text = EMOJI_REGEX.sub(" ", text)
 
-    # 8. Turbo only supports a narrow bracket-tag subset.
+    # 8. Tag Overrides for OmniVoice
+    if mode == "omni":
+        # ARPAbet Detection: Identify bracketed content that looks like CMUdict phonemes
+        # (e.g. [R IH0 L EY1 SH AH0 N Z]) and wrap in double-brackets [[ ]] for the tokenizer.
+        # Pattern: Starts with [, ends with ], contains all-caps, digits, and spaces.
+        def wrap_arpabet(match: re.Match[str]) -> str:
+            content = match.group(1).strip()
+            # If content is purely ARPAbet tokens (All-caps, digits, and spaces)
+            if re.fullmatch(r"[A-Z0-9\s]+", content):
+                return f"[[{content}]]"
+            return match.group(0)
+
+        text = re.sub(r"\[([^\]]+)\]", wrap_arpabet, text)
+
+    # 9. Turbo only supports a narrow bracket-tag subset.
     if mode == "turbo":
         text = strip_unsupported_turbo_tags(text)
 
@@ -504,6 +522,7 @@ async def speech(request: SpeechRequest):
             print(f"Requested Voice: {request.voice} -> {target_voice}")
             print(f"Resolved Profile: {target_profile}")
             print(f"Resolved Voice Path: {voice_path}")
+            print(f"Final Model Input: {processed_input}")
 
             # Dynamic Priming: If we haven't seen this voice before, prime it
             voice_name = Path(voice_path).stem.lower()
