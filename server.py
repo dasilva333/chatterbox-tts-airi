@@ -19,6 +19,19 @@ import csv
 from pathlib import Path
 import time
 import tempfile
+import sys
+
+# Force global float32 for model compatibility
+torch.set_default_dtype(torch.float32)
+
+# Global Monkey-patch for torch.from_numpy to fix Float vs Double mismatches in 3rd party libraries
+_original_from_numpy = torch.from_numpy
+def _patched_from_numpy(ndarray):
+    res = _original_from_numpy(ndarray)
+    if res.dtype == torch.float64:
+        return res.float()
+    return res
+torch.from_numpy = _patched_from_numpy
 
 app = FastAPI(title="Chatterbox OpenAI Compatible Server")
 
@@ -37,7 +50,28 @@ parser.add_argument("--turbo", action="store_true", help="Use the high-speed Tur
 parser.add_argument("--omni", action="store_true", help="Use the OmniVoice inference engine")
 parser.add_argument("--full", action="store_true", help="Use the high-quality full model (deprecated as default)")
 parser.add_argument("--port", type=int, default=8090, help="Port to run the server on")
+parser.add_argument("--vram-limit", type=int, default=None, help="Hardware VRAM limit in Megabytes (MB)")
 args, unknown = parser.parse_known_args()
+
+# Apply VRAM limit if requested
+if args.vram_limit and torch.cuda.is_available():
+    try:
+        device_id = 0 # Default to first GPU
+        prop = torch.cuda.get_device_properties(device_id)
+        total_memory_bytes = prop.total_memory
+        total_memory_mb = total_memory_bytes // (1024 * 1024)
+        
+        # Calculate fraction
+        limit_bytes = args.vram_limit * 1024 * 1024
+        fraction = limit_bytes / total_memory_bytes
+        
+        # Clamp fraction to [0, 1] to avoid Pytorch errors
+        fraction = min(max(fraction, 0.0), 1.0)
+        
+        print(f"[VRAM Guard] Limit: {args.vram_limit} MB | Total GPU: {total_memory_mb} MB | Fraction: {fraction:.3f}")
+        torch.cuda.set_per_process_memory_fraction(fraction, device_id)
+    except Exception as e:
+        print(f"Warning: Failed to set VRAM limit: {e}")
 
 # Load profiles
 BASE_DIR = Path(__file__).parent.absolute()
@@ -247,9 +281,13 @@ def preprocess_text(text: str, profile_name: str, mode: str) -> str:
 # Initialize the model
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 if args.turbo:
-    if "HF_TOKEN" not in os.environ and "HUGGING_FACE_HUB_TOKEN" not in os.environ:
+    token = os.environ.get("HF_TOKEN", "").strip() or os.environ.get("HUGGING_FACE_HUB_TOKEN", "").strip()
+    if not token:
         print("WARNING: HF_TOKEN environment variable not found. Downloading the Turbo model may fail if you are not authenticated.")
         print("Please set your token: 'set HF_TOKEN=your_token_here' before running.")
+    else:
+        # Re-set it back to sanitized version for sub-libraries to use
+        os.environ["HF_TOKEN"] = token
     
     from chatterbox.tts_turbo import ChatterboxTurboTTS
     print(f"Loading Chatterbox Turbo model on {DEVICE}...")
@@ -260,7 +298,17 @@ elif getattr(args, 'full', False):
     model = ChatterboxTTS.from_pretrained(DEVICE)
 else:
     # Default to Omni
-    from omnivoice import OmniVoice
+    try:
+        from omnivoice import OmniVoice
+    except ImportError:
+        print("\n" + "="*60)
+        print("ERROR: OmniVoice dependencies are missing or outdated!")
+        print("This engine requires 'transformers>=5.5.0'.")
+        print("FIX: Run 'pip install -r requirements.txt --upgrade'")
+        print("OR: Start with '--turbo' or '--full' to use classic models.")
+        print("="*60 + "\n")
+        sys.exit(1)
+
     print(f"Loading OmniVoice model (Default) on {DEVICE}...")
     model = OmniVoice.from_pretrained(
         "k2-fsa/OmniVoice",
@@ -307,7 +355,7 @@ def list_voice_files() -> List[str]:
 def prepare_voice_conditional(voice_path: str) -> str:
     """Ensure voice clone sample is long enough for the model and prime it."""
     # Check duration
-    data, samplerate = sf.read(voice_path)
+    data, samplerate = sf.read(voice_path, dtype='float32')
     duration = len(data) / samplerate
     
     is_omni_mode = getattr(args, 'omni', False) or (not getattr(args, 'turbo', False) and not getattr(args, 'full', False))
