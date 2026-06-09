@@ -11,3 +11,6 @@ __pycache__/
 benchmark_report.txt
 test_scripts/
 padded_voices/
+/node_modules
+/personal_dialogs
+/voices

@@ -21,18 +21,6 @@ import time
 import tempfile
 import sys
 
-# Force global float32 for model compatibility
-torch.set_default_dtype(torch.float32)
-
-# Global Monkey-patch for torch.from_numpy to fix Float vs Double mismatches in 3rd party libraries
-_original_from_numpy = torch.from_numpy
-def _patched_from_numpy(ndarray):
-    res = _original_from_numpy(ndarray)
-    if res.dtype == torch.float64:
-        return res.float()
-    return res
-torch.from_numpy = _patched_from_numpy
-
 app = FastAPI(title="Chatterbox OpenAI Compatible Server")
 
 app.add_middleware(
@@ -253,10 +241,14 @@ def preprocess_text(text: str, profile_name: str, mode: str) -> str:
     # 6. Dramatic Ellipsis -> [sigh]
     text = text.replace("...", " [sigh] ")
 
-    # 7. Strip Emojis (similar to aws-polly)
+    # 7. Normalize laughter tags
+    text = re.sub(r"\[chuckle\]", "[laughter]", text, flags=re.IGNORECASE)
+    text = re.sub(r"\[laughs?\]", "[laughter]", text, flags=re.IGNORECASE)
+
+    # 8. Strip Emojis (similar to aws-polly)
     text = EMOJI_REGEX.sub(" ", text)
 
-    # 8. Tag Overrides for OmniVoice
+    # 9. Tag Overrides for OmniVoice
     if mode == "omni":
         # ARPAbet Detection: Identify bracketed content that looks like CMUdict phonemes
         # (e.g. [R IH0 L EY1 SH AH0 N Z]) and wrap in double-brackets [[ ]] for the tokenizer.
@@ -270,7 +262,7 @@ def preprocess_text(text: str, profile_name: str, mode: str) -> str:
 
         text = re.sub(r"\[([^\]]+)\]", wrap_arpabet, text)
 
-    # 9. Turbo only supports a narrow bracket-tag subset.
+    # 10. Turbo only supports a narrow bracket-tag subset.
     if mode == "turbo":
         text = strip_unsupported_turbo_tags(text)
 
@@ -355,7 +347,7 @@ def list_voice_files() -> List[str]:
 def prepare_voice_conditional(voice_path: str) -> str:
     """Ensure voice clone sample is long enough for the model and prime it."""
     # Check duration
-    data, samplerate = sf.read(voice_path, dtype='float32')
+    data, samplerate = sf.read(voice_path)
     duration = len(data) / samplerate
     
     is_omni_mode = getattr(args, 'omni', False) or (not getattr(args, 'turbo', False) and not getattr(args, 'full', False))

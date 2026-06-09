@@ -1,0 +1,4 @@
+[quina] Hola, soy Quina. ¿Cómo estás?
+[isabel-dalilas] Hola Quina, yo soy Isabel. Todo bien por aquí.
+[quina] Me alegra saberlo. ¿Qué planes tienes para hoy?
+[isabel-dalilas] Solo buscar mis propios bienes, nada más.
