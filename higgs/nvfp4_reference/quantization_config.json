@@ -1,0 +1,13 @@
+{
+  "base_model": "bosonai/higgs-audio-v3-tts-4b",
+  "base_model_relation": "quantized",
+  "format": "nvfp4",
+  "quantized_scope": "body.layers.* 2D transformer weights only",
+  "preserved_scope": "codec/vocoder, fused modality embedding/head, norms, biases, non-2D tensors",
+  "quantized_parameters": 3633315840,
+  "total_parameters_seen": 4654850537,
+  "quantized_parameter_fraction": 0.780544039195216,
+  "artifact_note": "Runtime integration required for Higgs custom multi-codebook TTS generation.",
+  "runtime_note": "Persian TTS validation passed by listening after trimming a near-silent tail; use trailing-silence trimming for served NVFP4 audio.",
+  "sample_trim_report": "nvfp4_persian_tts_trim_report.json"
+}

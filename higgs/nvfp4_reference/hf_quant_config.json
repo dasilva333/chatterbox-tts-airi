@@ -1,0 +1,42 @@
+{
+  "quantization": {
+    "quant_algo": "NVFP4",
+    "kv_cache_quant_algo": "auto",
+    "exclude_modules": [
+      "tied.embedding.text_embedding",
+      "tied.embedding.modality_embeddings",
+      "tied.head.text_head",
+      "tied.head.modality_heads",
+      "body.norm",
+      "lm_head",
+      "embed_tokens",
+      "model.embed_tokens",
+      "model.norm",
+      "multimodal_embedding",
+      "modality_head"
+    ]
+  },
+  "group_size": 16,
+  "packed_modules_mapping": {
+    "qkv_proj": [
+      "q_proj",
+      "k_proj",
+      "v_proj"
+    ],
+    "gate_up_proj": [
+      "gate_proj",
+      "up_proj"
+    ]
+  },
+  "config_groups": {
+    "group_0": {
+      "weights": {
+        "num_bits": 4,
+        "type": "float",
+        "strategy": "block",
+        "group_size": 16
+      }
+    }
+  },
+  "_comment": "Legacy sidecar for SGLang ModelOpt FP4 loader."
+}

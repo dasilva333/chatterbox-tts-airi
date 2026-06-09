@@ -6,6 +6,15 @@ Run the currently working **Higgs Audio v3 ONNX zero-shot TTS** path locally fro
 
 This document is only about the ONNX path that is already proven to synthesize audio. It is not about NVFP4 or voice cloning.
 
+## Artifact source
+
+The browser-space app hardcodes the ONNX artifact source as:
+
+- Repo id: `Reza2kn/Higgs-Audio-v3-TTS-4bit-ONNX`
+- Resolve root: `https://huggingface.co/Reza2kn/Higgs-Audio-v3-TTS-4bit-ONNX/resolve/main/`
+
+That matters because it gives a canonical download root for the local files that were intentionally excluded from Git history.
+
 ## Required model artifacts
 
 These files are currently required in [`higgs/`](C:/Users/h4rdc/Documents/Github/coding-agent/chatterbox/higgs):
@@ -21,6 +30,18 @@ Optional alternative vocoder:
 
 - `higgs_audio_v3_vocoder_decode_matmul4.onnx`
 - `higgs_audio_v3_vocoder_decode_matmul4.onnx.data`
+
+Artifacts referenced directly by [`app.py`](C:/Users/h4rdc/Documents/Github/coding-agent/chatterbox/higgs/app.py):
+
+- `https://huggingface.co/Reza2kn/Higgs-Audio-v3-TTS-4bit-ONNX/resolve/main/ar/higgs_audio_v3_ar_prefill_matmul4.onnx`
+- `https://huggingface.co/Reza2kn/Higgs-Audio-v3-TTS-4bit-ONNX/resolve/main/ar/higgs_audio_v3_ar_prefill_matmul4.onnx.data`
+- `https://huggingface.co/Reza2kn/Higgs-Audio-v3-TTS-4bit-ONNX/resolve/main/ar/higgs_audio_v3_ar_decode_matmul4.onnx`
+- `https://huggingface.co/Reza2kn/Higgs-Audio-v3-TTS-4bit-ONNX/resolve/main/ar/higgs_audio_v3_ar_decode_matmul4.onnx.data`
+- `https://huggingface.co/Reza2kn/Higgs-Audio-v3-TTS-4bit-ONNX/resolve/main/higgs_audio_v3_vocoder_decode.onnx`
+- `https://huggingface.co/Reza2kn/Higgs-Audio-v3-TTS-4bit-ONNX/resolve/main/higgs_audio_v3_vocoder_decode.onnx.data`
+- `https://huggingface.co/Reza2kn/Higgs-Audio-v3-TTS-4bit-ONNX/resolve/main/higgs_audio_v3_vocoder_decode_matmul4.onnx`
+- `https://huggingface.co/Reza2kn/Higgs-Audio-v3-TTS-4bit-ONNX/resolve/main/higgs_audio_v3_vocoder_decode_matmul4.onnx.data`
+- `https://huggingface.co/Reza2kn/Higgs-Audio-v3-TTS-4bit-ONNX/resolve/main/sample_codes_fa_64.json`
 
 Tokenizer assets currently used by the working Python runner:
 

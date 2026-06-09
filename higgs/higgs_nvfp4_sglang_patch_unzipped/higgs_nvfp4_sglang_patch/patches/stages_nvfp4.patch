@@ -1,0 +1,57 @@
+--- /mnt/data/stages.py	2026-06-09 15:33:41.248944830 +0000
++++ /mnt/data/higgs_nvfp4_sglang_patch/sglang_overlay/sglang_omni/models/higgs_tts/stages.py	2026-06-09 15:38:54.592305537 +0000
+@@ -64,6 +64,36 @@
+ logger = logging.getLogger(__name__)
+ 
+ 
++# Conservative default used by config.py.  The standalone file fetched for this
++# patch did not define it, but config.py imports it.
++DEFAULT_MAX_CONCURRENCY = int(os.environ.get("HIGGS_TTS_MAX_CONCURRENCY", "8"))
++
++
++def _looks_like_prepared_nvfp4_checkpoint(checkpoint_dir: str | os.PathLike[str]) -> bool:
++    """Return True when this checkpoint has the prepared ModelOpt FP4 marker.
++
++    The Reza2kn NVFP4 repo ships a descriptive quantization_config.json; this
++    patch's prepare step writes SGLang's expected `quantization_config` into
++    config.json and a sidecar hf_quant_config.json.  This helper lets the Higgs
++    stage pass SGLang's ModelOpt FP4 quantization hint when available, while
++    remaining harmless for the original bf16 checkpoint.
++    """
++    import json
++
++    cfg_path = Path(checkpoint_dir) / "config.json"
++    if not cfg_path.exists():
++        return False
++    try:
++        cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
++    except Exception:
++        return False
++    q = cfg.get("quantization_config") or {}
++    return (
++        str(q.get("quant_algo", "")).upper() == "NVFP4"
++        or str(q.get("quant_method", "")).lower() in {"modelopt", "modelopt_fp4"}
++    )
++
++
+ # Codec runs at 75 Hz; chunked prefill of the multi-codebook prompt is unsafe
+ # (sampler state machine has no rollback) so reject inputs past chunked_prefill_size.
+ _MAX_REF_AUDIO_SEC = 100
+@@ -408,6 +438,17 @@
+     if server_args_overrides:
+         overrides.update(server_args_overrides)
+ 
++    if _looks_like_prepared_nvfp4_checkpoint(checkpoint_dir):
++        # SGLang can parse offline quantization from HF config, but some
++        # ModelOpt FP4 builds still require an explicit quantization hint.
++        # Let user overrides win.
++        overrides.setdefault("quantization", "modelopt_fp4")
++        # SM80/SM90 cards need the Marlin fallback for NVFP4; Blackwell can
++        # override this with HIGGS_NVFP4_FP4_GEMM_BACKEND=cutlass/flashinfer.
++        fp4_backend = os.environ.get("HIGGS_NVFP4_FP4_GEMM_BACKEND")
++        if fp4_backend:
++            overrides.setdefault("fp4_gemm_backend", fp4_backend)
++
+     server_args = build_sglang_server_args(
+         checkpoint_dir,
+         context_length=4096,
