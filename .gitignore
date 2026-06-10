@@ -14,7 +14,7 @@ padded_voices/
 /node_modules
 /personal_dialogs
 /voices
-/higgs/higgs_audio_v3_ar_prefill_matmul4.onnx.data
-/higgs/higgs_audio_v3_ar_decode_matmul4.onnx.data
-/higgs/higgs_audio_v3_vocoder_decode.onnx.data
-/higgs/higgs_audio_v3_vocoder_decode_matmul4.onnx.data
+/higgs/models/
+/higgs/bosonai/model.safetensors
+/higgs/tokenizer.json
+/higgs/bosonai/tokenizer.json
